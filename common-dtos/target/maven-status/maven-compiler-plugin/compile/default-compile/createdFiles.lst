@@ -1,0 +1,11 @@
+com\shared\dtos\StudentDto.class
+com\shared\dtos\VerifyDto.class
+com\shared\dtos\SubmissionDto.class
+com\shared\dtos\LoanLimitDto.class
+com\shared\dtos\AnswerDto.class
+com\shared\dtos\CreditResult.class
+com\shared\dtos\RequestRoleDto.class
+com\shared\dtos\ProgressDto.class
+com\shared\dtos\RoleDto.class
+com\shared\dtos\StaffPayload.class
+com\shared\dtos\SubmissionRequestDto.class
