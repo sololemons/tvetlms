@@ -58,7 +58,7 @@ public class StudentController {
         return ResponseEntity.ok(studentServices.deleteStudent(id));
     }
 
-    @GetMapping("/get/student")
+    @GetMapping("/get/profile")
     public ResponseEntity<StudentDto> getStudent(Principal principal) {
         return ResponseEntity.ok(studentServices.getActiveStudent(principal));
     }
@@ -66,6 +66,7 @@ public class StudentController {
     public ResponseEntity<String> submitAssignment(@RequestBody SubmissionRequestDto submissionRequestDto) {
         return ResponseEntity.ok(studentServices.submitAssignment(submissionRequestDto));
     }
+
 
 
 

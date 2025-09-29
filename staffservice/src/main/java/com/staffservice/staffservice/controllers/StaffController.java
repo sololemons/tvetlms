@@ -77,7 +77,7 @@ public class StaffController {
         return ResponseEntity.ok(staffServices.getAssignmentsByStaffId(staffId));
     }
 
-    @GetMapping("/fetch/staff")
+    @GetMapping("/get/profile")
     public ResponseEntity<StaffDto> getStaff(Principal principal) {
         return ResponseEntity.ok(staffServices.getActiveStaff(principal));
     }
