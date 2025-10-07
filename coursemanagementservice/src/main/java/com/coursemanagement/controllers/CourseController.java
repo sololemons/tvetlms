@@ -1,7 +1,7 @@
 package com.coursemanagement.controllers;
 
 import com.coursemanagement.dtos.CourseDto;
-import com.coursemanagement.dtos.ModuleDto;
+import com.shared.dtos.ModuleDto;
 import com.coursemanagement.services.CourseService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -22,5 +22,9 @@ public class CourseController {
     @PostMapping("/add")
     public ResponseEntity<String> addCourse(@RequestBody CourseDto courseDto) {
         return ResponseEntity.ok(courseService.addCourses(courseDto));
+    }
+    @GetMapping("/get/module/{courseId}")
+    public ResponseEntity<List<ModuleDto>> getModule(@PathVariable Integer courseId) {
+     return ResponseEntity.ok(courseService.getModules(courseId));
     }
 }

@@ -25,7 +25,6 @@ public class Course {
     private String courseName;
     @Column(name = "description")
     private String description;
-
     @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "overview_id", referencedColumnName = "id")
     private CourseOverview courseOverview;

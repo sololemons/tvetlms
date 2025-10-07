@@ -1,10 +1,19 @@
 package com.studentservice.student.services;
 
+import com.shared.dtos.CertificateRequestDto;
 import com.shared.dtos.SubmissionRequestDto;
 import com.studentservice.student.configuration.RabbitMQConfiguration;
+import com.studentservice.student.configuration.retrofit.RetrofitService;
+import com.studentservice.student.dtos.EnrollDto;
+import com.shared.dtos.ModuleDto;
+import com.studentservice.student.dtos.ProfileDto;
 import com.studentservice.student.dtos.StudentDto;
+import com.studentservice.student.entities.EnrolledCourses;
+import com.studentservice.student.entities.EnrolledModules;
 import com.studentservice.student.entities.Student;
 import com.studentservice.student.exceptions.UserNotFoundException;
+import com.studentservice.student.repository.EnrolledModulesRepository;
+import com.studentservice.student.repository.EnrolledCourseRepository;
 import com.studentservice.student.repository.StudentRepository;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -13,8 +22,10 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.security.Principal;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -24,6 +35,9 @@ import java.util.stream.Collectors;
 public class StudentServices {
 
     private final StudentRepository studentRepository;
+    private final EnrolledModulesRepository enrolledModulesRepository;
+    private final EnrolledCourseRepository enrolledRepository;
+    private final RetrofitService retrofitService;
     private final RabbitTemplate rabbitTemplate;
     private final Logger log = LoggerFactory.getLogger(StudentServices.class);
 
@@ -49,7 +63,9 @@ public class StudentServices {
                 student.getAdmissionId(),
                 student.getAdmissionYear(),
                 student.getGender(),
-                student.getClassName()
+                student.getClassName(),
+                student.getFirstName(),
+                student.getLastName()
         );
     }
 
@@ -110,5 +126,93 @@ public class StudentServices {
             return mapToDto(student);
         }
         throw new UserNotFoundException("Student not found with email: " + email);
+    }
+    @Transactional
+    public String enrollCourses(EnrollDto enrollDto) {
+        Student student = studentRepository.findByAdmissionId(enrollDto.getAdmissionId())
+                .orElseThrow(() -> new UserNotFoundException("Student not found"));
+
+        EnrolledCourses enrolledCourse = new EnrolledCourses();
+        long courseId = Long.parseLong(enrollDto.getCourseId());
+        enrolledCourse.setCourseId(courseId);
+        enrolledCourse.setCourseName(enrollDto.getCourseName());
+        enrolledCourse.setProgression("0%");
+        enrolledCourse.setCompleted(false);
+        enrolledCourse.setStudent(student);
+        enrolledRepository.save(enrolledCourse);
+
+        student.getEnrolledCourses().add(enrolledCourse);
+        studentRepository.save(student);
+
+        List<ModuleDto> modules = retrofitService.getModules((int) courseId);
+
+        for (ModuleDto module : modules) {
+            EnrolledModules enrolledModule = new EnrolledModules();
+            enrolledModule.setCompleted(false);
+            enrolledModule.setEnrolledCourse(enrolledCourse);
+            enrolledModule.setModuleName(module.getModuleName());
+            enrolledModule.setDuration(module.getWeek());
+            enrolledModule.setModuleId(module.getModuleId());
+            enrolledModulesRepository.save(enrolledModule);
+        }
+
+        return "Student enrolled in course: " + enrollDto.getCourseName();
+    }
+
+    @Transactional
+    public String setModuleDone(Long moduleId, Principal principal) {
+        String userName = principal.getName();
+        Student student = studentRepository.findByEmail(userName).orElseThrow(() -> new UserNotFoundException("Student not found"));
+        String admissionId = student.getAdmissionId();
+        EnrolledModules enrolledModule = enrolledModulesRepository.findByModuleIdAndEnrolledCourse_Student_AdmissionId(moduleId,admissionId);
+        if (enrolledModule == null) {
+            throw new IllegalArgumentException("Module not found: " + moduleId);
+        }
+
+        enrolledModule.setCompleted(true);
+        enrolledModulesRepository.save(enrolledModule);
+
+        EnrolledCourses enrolledCourse = enrolledModule.getEnrolledCourse();
+
+        StudentDto studentDto = mapToDto(student);
+
+        updateCourseProgression(enrolledCourse, studentDto);
+
+        return "Module Completed: " + enrolledModule.getModuleName() +
+                " | Current Progression: " + enrolledCourse.getProgression();
+    }
+    private void updateCourseProgression(EnrolledCourses enrolledCourse, StudentDto studentDto) {
+        List<EnrolledModules> modules = enrolledModulesRepository.findByEnrolledCourse_CourseId(enrolledCourse.getCourseId());
+
+        long total = modules.size();
+        long completed = modules.stream().filter(EnrolledModules::isCompleted).count();
+
+        String progression = (total == 0) ? "0%" : (completed * 100 / total) + "%";
+
+        enrolledCourse.setProgression(progression);
+        enrolledCourse.setCompleted(completed == total);
+        enrolledRepository.save(enrolledCourse);
+
+        if (completed == total) {
+            CertificateRequestDto certificateRequest = new CertificateRequestDto();
+            certificateRequest.setCourseId(enrolledCourse.getCourseId());
+            certificateRequest.setCourseName(enrolledCourse.getCourseName());
+            certificateRequest.setStudentId(studentDto.getAdmissionId());
+            certificateRequest.setEmail(studentDto.getEmail());
+            certificateRequest.setStudentFirstName(studentDto.getFirstName());
+            certificateRequest.setStudentLastName(studentDto.getLastName());
+            certificateRequest.setCompletionDate(LocalDate.now());
+            rabbitTemplate.convertAndSend(RabbitMQConfiguration.GENERATE_CERTIFICATE_QUEUE, certificateRequest);
+        }
+    }
+
+    public String completeProfile(ProfileDto profileDto,Principal principal) {
+        String userName = principal.getName();
+        Student student = studentRepository.findByEmail(userName).orElseThrow(() -> new UserNotFoundException("Student not found with email: " + userName));
+        student.setFirstName(profileDto.getFirstName());
+        student.setLastName(profileDto.getLastName());
+        studentRepository.save(student);
+        return "Profile Completed and Updated";
+
     }
 }

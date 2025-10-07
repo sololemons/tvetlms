@@ -1,9 +1,10 @@
 package com.coursemanagement.services;
 
 import com.coursemanagement.dtos.CourseDto;
-import com.coursemanagement.dtos.ModuleDto;
+import com.shared.dtos.ModuleDto;
 import com.coursemanagement.entity.Course;
 import com.coursemanagement.entity.CourseModule;
+import com.coursemanagement.repository.CourseModuleRepository;
 import com.coursemanagement.repository.CourseRepository;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +16,7 @@ import java.util.List;
 public class CourseService {
 
     private final CourseRepository courseRepository;
+    private final CourseModuleRepository courseModuleRepository;
     @Transactional(readOnly = true)
     public List<CourseDto> getAllCourses() {
         List<Course> courses = courseRepository.findAll();
@@ -31,7 +33,8 @@ public class CourseService {
                     .map(module -> new ModuleDto(
                             module.getWeek(),
                             module.getModuleName(),
-                            module.getContent()
+                            module.getContent(),
+                            (long) module.getModuleId()
                     ))
                     .toList();
             courseDto.setModuleDto(moduleDto);
@@ -64,5 +67,17 @@ public class CourseService {
         return "Course added successfully!";
     }
 
-
+    public List<ModuleDto> getModules(Integer courseId) {
+        System.out.println("courseId: " + courseId);
+       List<CourseModule> courseModule = courseModuleRepository.findByCourse_CourseId(courseId);
+       return courseModule.stream().map(this::mapToDto).toList();
+    }
+    private ModuleDto mapToDto(CourseModule courseModule) {
+        return new ModuleDto(
+               courseModule.getModuleName(),
+                courseModule.getWeek(),
+                courseModule.getContent(),
+                (long) courseModule.getModuleId()
+        );
+    }
 }

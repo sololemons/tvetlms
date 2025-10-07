@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
@@ -29,13 +30,17 @@ public class Student implements UserDetails {
 
     @Column(name = "admission_year")
     private long admissionYear;
+    @Column(name = "first_name")
+    private String firstName;
+    @Column(name = "last_name")
+    private String lastName;
 
     @Column(name = "gender")
     private String gender;
 
     @Column(name = "class_name")
     private String className;
-    @Column(name = "admission_id")
+    @Column(name = "admission_id", unique = true)
     private String admissionId;
 
 
@@ -44,6 +49,8 @@ public class Student implements UserDetails {
 
     @Enumerated(EnumType.STRING)
     private Role role;
+    @OneToMany(mappedBy = "student", cascade = CascadeType.ALL, orphanRemoval = true,fetch = FetchType.LAZY)
+    private List<EnrolledCourses> enrolledCourses = new ArrayList<>();
 
 
     @Override

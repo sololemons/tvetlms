@@ -22,6 +22,7 @@ public class CourseModule {
     @Column(name = "content")
     private String content;
 
+
     @ManyToOne
     @JoinColumn(name = "course_id")
     private Course course;

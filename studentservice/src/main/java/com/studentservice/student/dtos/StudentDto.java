@@ -13,5 +13,6 @@ public class StudentDto {
     private long admissionYear;
     private String gender;
     private String className;
-
+    private String firstName;
+    private String lastName;
 }

@@ -1,15 +1,15 @@
 package com.studentservice.student.configuration.retrofit;
 
-import com.placebet.placebetservice.dtos.Transaction;
-import com.placebet.placebetservice.exceptions.UserNotFoundException;
-import com.placebet.placebetservice.retrofit.models.ValidateResponse;
+import com.studentservice.student.exceptions.UserNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import retrofit2.Call;
 import retrofit2.Response;
+import com.shared.dtos.ModuleDto;
 
 import java.io.IOException;
+import java.util.List;
 
 
 @Service
@@ -22,18 +22,19 @@ public class RetrofitService {
     }
 
 
-    public ValidateResponse getValidateResponse(String authHeader) {
-        Call<ValidateResponse> call = apiClient.getValidateResponse(authHeader);
+    public List<ModuleDto> getModules(Integer courseId) {
+        logger.info(courseId.toString());
+        Call<List<ModuleDto>> call = apiClient.getModulesAssociatedWithCourse(courseId);
         try {
-            Response<ValidateResponse> response = call.execute();
+            Response<List<ModuleDto>> response = call.execute();
             if (response.isSuccessful() && response.body() != null) {
-                logger.info("Successfully fetched {} validateResponse. Response: {}, Response code: {}",
-                        response.body(), response.body(), response.code());
+                logger.info("Successfully fetched {} modules. Response code: {}",
+                        response.body().size(), response.code());
                 return response.body();
             } else {
-                logger.error("Failed to fetch validateResponse. Response code: {}, Error: {}",
+                logger.error("Failed to fetch modules. Response code: {}, Error: {}",
                         response.code(), response.errorBody());
-                throw new UserNotFoundException("Failed to fetch transactions. Response code: " + response.code());
+                throw new UserNotFoundException("Failed to fetch modules. Response code: " + response.code());
             }
         } catch (IOException e) {
             logger.error("API call failed due to network error: {}", e.getMessage());
@@ -41,26 +42,6 @@ public class RetrofitService {
         }
     }
 
-    public Transaction updateBalance(Transaction transaction) {
-        Call<Transaction> call = apiClient.updateBalance(transaction);
-        try {
-            Response<Transaction> response = call.execute();
-            if (response.isSuccessful() && response.body() != null) {
-                logger.info("Successfully sent the transaction dto: {} Response Code: {}",
-                        response.body(), response.code());
-                return response.body();
-            } else {
-                logger.error("Failed to update balance and send the transaction dto   Response code: {} , Error: {}",
-                        response.code(), response.errorBody());
-                throw new UserNotFoundException("Failed to send transaction dto . Response code: " + response.code());
-
-            }
-        } catch (IOException e) {
-            logger.error("API call failed due to network error: {}", e.getMessage());
-            throw new UserNotFoundException("API call failed due to network error");
-
-        }
-    }
 
 
 }

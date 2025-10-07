@@ -2,6 +2,8 @@ package com.studentservice.student.controllers;
 
 
 import com.shared.dtos.SubmissionRequestDto;
+import com.studentservice.student.dtos.EnrollDto;
+import com.studentservice.student.dtos.ProfileDto;
 import com.studentservice.student.dtos.StudentDto;
 import com.studentservice.student.services.StudentServices;
 import lombok.RequiredArgsConstructor;
@@ -65,6 +67,18 @@ public class StudentController {
     @PostMapping("/add/submission")
     public ResponseEntity<String> submitAssignment(@RequestBody SubmissionRequestDto submissionRequestDto) {
         return ResponseEntity.ok(studentServices.submitAssignment(submissionRequestDto));
+    }
+    @PostMapping("/enroll/course")
+    public ResponseEntity<String> enrollCourses(@RequestBody EnrollDto enrollDto){
+        return ResponseEntity.ok(studentServices.enrollCourses(enrollDto));
+    }
+    @PostMapping ("/set/module/complete/{moduleId}")
+    public ResponseEntity<String> setModuleComplete(@PathVariable Long moduleId,Principal principal){
+        return ResponseEntity.ok(studentServices.setModuleDone(moduleId,principal));
+    }
+    @PostMapping("/complete/profile")
+    public ResponseEntity<String>completeProfile(@RequestBody ProfileDto profileDto,Principal principal){
+        return ResponseEntity.ok(studentServices.completeProfile(profileDto,principal));
     }
 
 

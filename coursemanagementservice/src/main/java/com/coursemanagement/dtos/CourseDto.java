@@ -1,5 +1,6 @@
 package com.coursemanagement.dtos;
 
+import com.shared.dtos.ModuleDto;
 import com.coursemanagement.entity.CourseOverview;
 import lombok.AllArgsConstructor;
 import lombok.Data;
