@@ -24,6 +24,6 @@ public class EnrolledModules {
     private boolean isCompleted;
 
     @ManyToOne
-    @JoinColumn(name = "enrolled_course_id")
+    @JoinColumn(name = "enrolled_course_id", referencedColumnName = "course_id")
     private EnrolledCourses enrolledCourse;
 }

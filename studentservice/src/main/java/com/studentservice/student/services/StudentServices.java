@@ -6,6 +6,7 @@ import com.studentservice.student.configuration.RabbitMQConfiguration;
 import com.studentservice.student.configuration.retrofit.RetrofitService;
 import com.studentservice.student.dtos.EnrollDto;
 import com.shared.dtos.ModuleDto;
+import com.studentservice.student.dtos.MarkModuleDoneDto;
 import com.studentservice.student.dtos.ProfileDto;
 import com.studentservice.student.dtos.StudentDto;
 import com.studentservice.student.entities.EnrolledCourses;
@@ -132,8 +133,14 @@ public class StudentServices {
         Student student = studentRepository.findByAdmissionId(enrollDto.getAdmissionId())
                 .orElseThrow(() -> new UserNotFoundException("Student not found"));
 
-        EnrolledCourses enrolledCourse = new EnrolledCourses();
         long courseId = Long.parseLong(enrollDto.getCourseId());
+
+        boolean alreadyEnrolled = enrolledRepository.existsByStudent_AdmissionIdAndCourseId(enrollDto.getAdmissionId(), courseId);
+        if (alreadyEnrolled) {
+            return " Student is already enrolled in course: " + enrollDto.getCourseName();
+        }
+
+        EnrolledCourses enrolledCourse = new EnrolledCourses();
         enrolledCourse.setCourseId(courseId);
         enrolledCourse.setCourseName(enrollDto.getCourseName());
         enrolledCourse.setProgression("0%");
@@ -156,17 +163,18 @@ public class StudentServices {
             enrolledModulesRepository.save(enrolledModule);
         }
 
-        return "Student enrolled in course: " + enrollDto.getCourseName();
+        return "✅ Student successfully enrolled in course: " + enrollDto.getCourseName();
     }
 
+
     @Transactional
-    public String setModuleDone(Long moduleId, Principal principal) {
+    public String setModuleDone(MarkModuleDoneDto markModuleDoneDto, Principal principal) {
         String userName = principal.getName();
         Student student = studentRepository.findByEmail(userName).orElseThrow(() -> new UserNotFoundException("Student not found"));
         String admissionId = student.getAdmissionId();
-        EnrolledModules enrolledModule = enrolledModulesRepository.findByModuleIdAndEnrolledCourse_Student_AdmissionId(moduleId,admissionId);
+        EnrolledModules enrolledModule = enrolledModulesRepository.findByModuleIdAndEnrolledCourse_CourseIdAndEnrolledCourse_Student_AdmissionId(markModuleDoneDto.getModuleId(), markModuleDoneDto.getCourseId(), admissionId);
         if (enrolledModule == null) {
-            throw new IllegalArgumentException("Module not found: " + moduleId);
+            throw new IllegalArgumentException("Module not found: " + markModuleDoneDto.getModuleId() +"in Course with Course Id" + markModuleDoneDto.getCourseId());
         }
 
         enrolledModule.setCompleted(true);

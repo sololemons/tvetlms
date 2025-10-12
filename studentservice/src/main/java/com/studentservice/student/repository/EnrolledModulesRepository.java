@@ -15,5 +15,6 @@ public interface EnrolledModulesRepository extends JpaRepository<EnrolledModules
 
     List<EnrolledModules> findByEnrolledCourse_CourseId(Long courseId);
 
-    EnrolledModules findByModuleIdAndEnrolledCourse_Student_AdmissionId(Long moduleId, String admissionId);
+    EnrolledModules findByModuleIdAndEnrolledCourse_CourseIdAndEnrolledCourse_Student_AdmissionId(Long moduleId, Long courseId, String admissionId);
+
 }

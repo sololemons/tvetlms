@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Certificate of Completion</title>
+    <style>
+        @page { size: A4 landscape; margin: 1.5cm; }
+
+        body {
+            font-family: 'Helvetica', Arial, sans-serif;
+            background-color: #f8f8f8;
+        }
+
+        .certificate {
+            border: 10px solid #d4af37;
+            padding: 40px;
+            background-color: #fffef6;
+            text-align: center;
+            position: relative;
+        }
+
+        .certificate::before {
+            content: "";
+            position: absolute;
+            top: 15px; left: 15px; right: 15px; bottom: 15px;
+            border: 3px solid #d4af37;
+        }
+
+        .logo {
+            width: 120px;
+            margin-top: 10px;
+        }
+
+        .title {
+            font-size: 36px;
+            color: #2b2b2b;
+            letter-spacing: 3px;
+            margin-top: 20px;
+            font-weight: 700;
+        }
+
+        .subtitle {
+            font-size: 18px;
+            color: #555;
+            font-style: italic;
+            margin-top: 10px;
+        }
+
+        .recipient {
+            font-size: 28px;
+            color: #111;
+            margin-top: 30px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .text {
+            font-size: 18px;
+            margin-top: 20px;
+            color: #333;
+        }
+
+        .course-name {
+            font-size: 22px;
+            font-weight: bold;
+            color: #1d3557;
+            margin-top: 10px;
+        }
+
+        .date {
+            margin-top: 30px;
+            font-size: 16px;
+            color: #444;
+        }
+
+        .issuer {
+            position: absolute;
+            bottom: 60px;
+            left: 80px;
+            text-align: left;
+        }
+
+        .issuer-line {
+            border-top: 2px solid #444;
+            width: 220px;
+            margin-bottom: 5px;
+        }
+
+        .issuer-text {
+            font-size: 14px;
+            color: #444;
+        }
+
+        .signature {
+            position: absolute;
+            bottom: 60px;
+            right: 80px;
+            text-align: right;
+        }
+
+        .signature-line {
+            border-top: 2px solid #444;
+            width: 220px;
+            margin-bottom: 5px;
+        }
+
+        .signature-text {
+            font-size: 14px;
+            color: #444;
+        }
+    </style>
+</head>
+<body>
+<div class="certificate">
+    <!-- Optional logo (put logo.png under resources/static/images/) -->
+    <!-- <img th:src="@{/images/logo.png}" alt="Logo" class="logo" /> -->
+
+    <div class="title">CERTIFICATE OF COMPLETION</div>
+    <div class="subtitle">This is to certify that</div>
+
+    <div class="recipient" th:text="${studentName}">Student Name</div>
+
+    <div class="text">has successfully completed the course</div>
+    <div class="course-name" th:text="${courseName}">Course Name</div>
+
+    <div class="date">Date of Completion:
+        <span th:text="${completionDate}">1 January 2025</span>
+    </div>
+
+    <div class="issuer">
+        <div class="issuer-line"></div>
+        <div class="issuer-text">Authorized by Grade Service</div>
+    </div>
+
+    <div class="signature">
+        <div class="signature-line"></div>
+        <div class="signature-text">Instructor Signature</div>
+    </div>
+</div>
+</body>
+</html>

@@ -4,11 +4,15 @@ import com.gradeservice.configuration.RabbitMQConfiguration;
 import com.gradeservice.entities.Certifications;
 import com.gradeservice.repositories.CertificationsRepository;
 import com.shared.dtos.CertificateRequestDto;
-import com.itextpdf.text.*;
-import com.itextpdf.text.pdf.PdfWriter;
+import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
 import lombok.RequiredArgsConstructor;
+import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
+import org.thymeleaf.TemplateEngine;
+import org.thymeleaf.context.Context;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -25,27 +29,33 @@ public class CertificateService {
     private final Logger logger = Logger.getLogger(CertificateService.class.getName());
     private final CertificationsRepository certificationsRepository;
     private final EmailService emailService;
+    private final TemplateEngine templateEngine;
+    private final RabbitTemplate rabbitTemplate; // needed to requeue
 
     @RabbitListener(queues = RabbitMQConfiguration.GENERATE_CERTIFICATE_QUEUE)
     public void generateCertificates(CertificateRequestDto dto) {
         try {
+            logger.info("🎓 Generating styled certificate for: " + dto.getStudentFirstName() + " " + dto.getStudentLastName());
 
-            Path pdfPath = generatePdf(dto);
+            // 1️⃣ Generate styled PDF
+            Path pdfPath = generatePdfFromTemplate(dto);
             File pdfFile = pdfPath.toFile();
 
-
+            // 2️⃣ Create signature and hash
             byte[] pdfBytes = Files.readAllBytes(pdfPath);
             byte[] hash = computeHash(pdfBytes);
             byte[] signature = signData(hash);
             Path sigPath = Path.of(pdfPath.toString().replace(".pdf", ".sig"));
             Files.write(sigPath, signature);
 
+            // 3️⃣ Save certificate in DB
             Certifications cert = new Certifications();
-            cert.setAdmissionId(dto.getStudentId());
+            cert.setAdmissionId(String.valueOf(dto.getStudentId()));
             cert.setCourseName(dto.getCourseName());
             cert.setCertificateFileName(pdfFile.getName());
             certificationsRepository.save(cert);
 
+            // 4️⃣ Send certificate to email
             emailService.sendCertificateEmail(
                     dto.getEmail(),
                     dto.getStudentFirstName() + " " + dto.getStudentLastName(),
@@ -53,11 +63,52 @@ public class CertificateService {
                     pdfFile
             );
 
-            logger.info("✅ Certificate generated and emailed to: " + dto.getEmail());
+            logger.info("✅ Certificate generated, signed, saved, and emailed to: " + dto.getEmail());
 
         } catch (Exception e) {
-            logger.severe("❌ Error generating or emailing certificate: " + e.getMessage());
+            logger.warning("⚠️ Failed to process certificate for: " + dto.getStudentFirstName() + " " + dto.getStudentLastName());
+            logger.warning("Reason: " + e.getMessage());
+
+            // ✅ Requeue message for retry
+            try {
+                rabbitTemplate.convertAndSend(
+                        RabbitMQConfiguration.GENERATE_CERTIFICATE_QUEUE,
+                        dto
+                );
+                logger.info("🔁 Requeued certificate generation for retry.");
+            } catch (Exception requeueEx) {
+                // Prevent infinite loops: don’t requeue again if the requeue itself fails
+                logger.severe("❌ Failed to requeue message: " + requeueEx.getMessage());
+                throw new AmqpRejectAndDontRequeueException("Permanent failure — message not requeued.");
+            }
         }
+    }
+
+    private Path generatePdfFromTemplate(CertificateRequestDto dto) throws Exception {
+        Path pdfPath = Path.of("certificates/",
+                dto.getStudentFirstName().replaceAll(" ", "_") + "_" +
+                        dto.getCourseName().replaceAll(" ", "_") + ".pdf");
+
+        Files.createDirectories(pdfPath.getParent());
+
+        // Fill Thymeleaf template
+        Context context = new Context();
+        context.setVariable("studentName", dto.getStudentFirstName() + " " + dto.getStudentLastName());
+        context.setVariable("courseName", dto.getCourseName());
+        context.setVariable("completionDate", dto.getCompletionDate().format(DateTimeFormatter.ofPattern("dd MMMM yyyy")));
+
+        String htmlContent = templateEngine.process("certificate-template", context);
+
+        // Render HTML → PDF
+        try (FileOutputStream os = new FileOutputStream(pdfPath.toFile())) {
+            PdfRendererBuilder builder = new PdfRendererBuilder();
+            builder.useFastMode();
+            builder.withHtmlContent(htmlContent, new ClassPathResource("/templates/").getURL().toString());
+            builder.toStream(os);
+            builder.run();
+        }
+
+        return pdfPath;
     }
 
     private byte[] computeHash(byte[] data) throws Exception {
@@ -74,33 +125,5 @@ public class CertificateService {
         rsa.initSign(keyPair.getPrivate());
         rsa.update(data);
         return rsa.sign();
-    }
-
-    private Path generatePdf(CertificateRequestDto dto) throws Exception {
-        Path pdfPath = Path.of("certificates/",
-                dto.getStudentFirstName().replaceAll(" ", "_") + "_" +
-                        dto.getCourseName().replaceAll(" ", "_") + ".pdf");
-        Files.createDirectories(pdfPath.getParent());
-
-        Document doc = new Document();
-        PdfWriter.getInstance(doc, new FileOutputStream(pdfPath.toFile()));
-        doc.open();
-        Font titleFont = new Font(Font.FontFamily.HELVETICA, 28, Font.BOLD);
-        Font normalFont = new Font(Font.FontFamily.HELVETICA, 14, Font.NORMAL);
-
-        Paragraph header = new Paragraph("CERTIFICATE OF COMPLETION", titleFont);
-        header.setAlignment(Element.ALIGN_CENTER);
-        doc.add(header);
-
-        doc.add(new Paragraph("\n"));
-        doc.add(new Paragraph("This certifies that " + dto.getStudentFirstName() + " " + dto.getStudentLastName(), normalFont));
-        doc.add(new Paragraph("has successfully completed the course:", normalFont));
-        doc.add(new Paragraph(dto.getCourseName(), new Font(Font.FontFamily.HELVETICA, 18, Font.BOLD)));
-        doc.add(new Paragraph("\n"));
-        doc.add(new Paragraph("Date of Completion: " + dto.getCompletionDate().format(DateTimeFormatter.ofPattern("dd MMM yyyy")), normalFont));
-        doc.add(new Paragraph("\nIssued by: Grade Service", normalFont));
-        doc.close();
-
-        return pdfPath;
     }
 }

@@ -3,6 +3,7 @@ package com.studentservice.student.controllers;
 
 import com.shared.dtos.SubmissionRequestDto;
 import com.studentservice.student.dtos.EnrollDto;
+import com.studentservice.student.dtos.MarkModuleDoneDto;
 import com.studentservice.student.dtos.ProfileDto;
 import com.studentservice.student.dtos.StudentDto;
 import com.studentservice.student.services.StudentServices;
@@ -72,9 +73,9 @@ public class StudentController {
     public ResponseEntity<String> enrollCourses(@RequestBody EnrollDto enrollDto){
         return ResponseEntity.ok(studentServices.enrollCourses(enrollDto));
     }
-    @PostMapping ("/set/module/complete/{moduleId}")
-    public ResponseEntity<String> setModuleComplete(@PathVariable Long moduleId,Principal principal){
-        return ResponseEntity.ok(studentServices.setModuleDone(moduleId,principal));
+    @PostMapping ("/set/module/complete")
+    public ResponseEntity<String> setModuleComplete(@RequestBody MarkModuleDoneDto markModuleDoneDto, Principal principal){
+        return ResponseEntity.ok(studentServices.setModuleDone(markModuleDoneDto,principal));
     }
     @PostMapping("/complete/profile")
     public ResponseEntity<String>completeProfile(@RequestBody ProfileDto profileDto,Principal principal){
