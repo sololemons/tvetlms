@@ -4,11 +4,8 @@ import com.shared.dtos.CertificateRequestDto;
 import com.shared.dtos.SubmissionRequestDto;
 import com.studentservice.student.configuration.RabbitMQConfiguration;
 import com.studentservice.student.configuration.retrofit.RetrofitService;
-import com.studentservice.student.dtos.EnrollDto;
+import com.studentservice.student.dtos.*;
 import com.shared.dtos.ModuleDto;
-import com.studentservice.student.dtos.MarkModuleDoneDto;
-import com.studentservice.student.dtos.ProfileDto;
-import com.studentservice.student.dtos.StudentDto;
 import com.studentservice.student.entities.EnrolledCourses;
 import com.studentservice.student.entities.EnrolledModules;
 import com.studentservice.student.entities.Student;
@@ -16,6 +13,7 @@ import com.studentservice.student.exceptions.UserNotFoundException;
 import com.studentservice.student.repository.EnrolledModulesRepository;
 import com.studentservice.student.repository.EnrolledCourseRepository;
 import com.studentservice.student.repository.StudentRepository;
+import com.studentservice.student.utilis.EnrolledCourseMapper;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -201,7 +199,7 @@ public class StudentServices {
         enrolledCourse.setCompleted(completed == total);
         enrolledRepository.save(enrolledCourse);
 
-        if (completed == total) {
+        if (enrolledCourse.isCompleted()) {
             CertificateRequestDto certificateRequest = new CertificateRequestDto();
             certificateRequest.setCourseId(enrolledCourse.getCourseId());
             certificateRequest.setCourseName(enrolledCourse.getCourseName());
@@ -223,4 +221,13 @@ public class StudentServices {
         return "Profile Completed and Updated";
 
     }
-}
+   @Transactional
+    public List<EnrolledCoursesDto> fetchAllEnrolledCourses(Principal principal) {
+    String userName = principal.getName();
+    Student student = studentRepository.findByEmail(userName).orElseThrow(() -> new UserNotFoundException("Student not found with email: " + userName));
+            return enrolledRepository.findByStudent_AdmissionId(student.getAdmissionId())
+                    .stream()
+                    .map(EnrolledCourseMapper::toDto)
+                    .collect(Collectors.toList());
+        }
+    }

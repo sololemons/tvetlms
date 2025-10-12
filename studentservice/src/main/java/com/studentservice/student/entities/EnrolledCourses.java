@@ -5,11 +5,18 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Data
 @Entity
 @AllArgsConstructor
 @NoArgsConstructor
-@Table(name = "enrolled_courses")
+@Table(
+        name = "enrolled_courses",
+        indexes = {
+                @Index(name = "idx_course_id", columnList = "course_id", unique = true)
+        }
+)
 public class EnrolledCourses {
     @Id
     @Column(name = "id")
@@ -19,12 +26,15 @@ public class EnrolledCourses {
     private String courseName;
     @Column(name = "progression")
     private String progression;
-    @Column(name = "course_id")
+    @Column(name = "course_id", unique = true)
     private long courseId;
     @Column(name = "is_completed")
     private boolean isCompleted;
     @ManyToOne
     @JoinColumn(name = "student_admission_id", referencedColumnName = "admission_id")
     private Student student;
+
+    @OneToMany(mappedBy = "enrolledCourse", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<EnrolledModules> enrolledModules;
 
 }

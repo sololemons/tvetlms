@@ -2,10 +2,7 @@ package com.studentservice.student.controllers;
 
 
 import com.shared.dtos.SubmissionRequestDto;
-import com.studentservice.student.dtos.EnrollDto;
-import com.studentservice.student.dtos.MarkModuleDoneDto;
-import com.studentservice.student.dtos.ProfileDto;
-import com.studentservice.student.dtos.StudentDto;
+import com.studentservice.student.dtos.*;
 import com.studentservice.student.services.StudentServices;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -80,6 +77,10 @@ public class StudentController {
     @PostMapping("/complete/profile")
     public ResponseEntity<String>completeProfile(@RequestBody ProfileDto profileDto,Principal principal){
         return ResponseEntity.ok(studentServices.completeProfile(profileDto,principal));
+    }
+    @GetMapping("/get/enrolled/courses")
+    public  ResponseEntity<List<EnrolledCoursesDto>>fetchEnrolledCourses(Principal principal){
+        return ResponseEntity.ok(studentServices.fetchAllEnrolledCourses(principal));
     }
 
 

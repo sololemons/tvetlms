@@ -17,7 +17,13 @@ import java.util.List;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@Table(name = "Student")
+@Table(
+        name = "student",
+        indexes = {
+                @Index(name = "idx_admission_id", columnList = "admission_id", unique = true)
+        }
+)
+
 public class Student implements UserDetails {
 
     @Id
