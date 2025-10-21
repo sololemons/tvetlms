@@ -2,16 +2,25 @@ package com.adminservice.adminservice.services;
 
 import com.adminservice.adminservice.configuration.RabbitMQConfiguration;
 import com.adminservice.adminservice.dtos.AdminDto;
+import com.adminservice.adminservice.dtos.InstitutionDto;
 import com.adminservice.adminservice.dtos.Role;
 import com.adminservice.adminservice.entities.Admin;
+import com.adminservice.adminservice.entities.Institution;
 import com.adminservice.adminservice.repositories.AdminRepository;
+import com.adminservice.adminservice.repositories.InstitutionRepository;
+import com.shared.dtos.SignatureDto;
 import com.shared.dtos.StaffPayload;
 import com.shared.dtos.StudentDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -22,6 +31,7 @@ public class AdminServices {
 
     private final PasswordEncoder passwordEncoder;
     private final RabbitTemplate rabbitTemplate;
+    private final InstitutionRepository institutionRepository;
 
 
 
@@ -50,5 +60,35 @@ public class AdminServices {
                 })
                 .collect(Collectors.toList());
     }
+    public String addInstitution(InstitutionDto institutionDto) {
+        try {
+            MultipartFile file = institutionDto.getSignatureFile();
+            String uploadDir = "uploads/signatures/";
 
+            Files.createDirectories(Paths.get(uploadDir));
+
+            String filePath = uploadDir + file.getOriginalFilename();
+            Path path = Paths.get(filePath);
+            file.transferTo(path);
+
+            Institution institution = new Institution();
+            institution.setInstitutionName(institutionDto.getInstitutionName());
+            institution.setCounty(institutionDto.getCounty());
+            institution.setSignature(filePath);
+
+            institutionRepository.save(institution);
+
+            return "Institution added successfully with signature.";
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to save institution ", e);
+        }
+    }
+
+    public SignatureDto getSignature() {
+        Institution institution = institutionRepository.findAll().stream().findFirst().orElse(null);
+        SignatureDto signatureDto = new SignatureDto();
+        assert institution != null;
+        signatureDto.setSignature(institution.getSignature());
+        return signatureDto;
+    }
 }

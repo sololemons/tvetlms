@@ -1,4 +1,4 @@
-package com.studentservice.student.exceptions;
+package com.gradeservice.exceptions;
 
 public class UnauthorizedException extends RuntimeException {
     public UnauthorizedException(String message) {

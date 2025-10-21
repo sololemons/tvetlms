@@ -1,4 +1,4 @@
-package com.studentservice.student.exceptions;
+package com.gradeservice.exceptions;
 
 public class MissingFieldException extends RuntimeException {
     public MissingFieldException(String message) {

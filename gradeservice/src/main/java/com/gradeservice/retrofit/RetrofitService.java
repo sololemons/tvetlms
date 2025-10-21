@@ -1,15 +1,14 @@
-package com.studentservice.student.configuration.retrofit;
+package com.gradeservice.retrofit;
 
-import com.studentservice.student.exceptions.UserNotFoundException;
+import com.gradeservice.exceptions.UserNotFoundException;
+import com.shared.dtos.SignatureDto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import retrofit2.Call;
 import retrofit2.Response;
-import com.shared.dtos.ModuleDto;
 
 import java.io.IOException;
-import java.util.List;
 
 
 @Service
@@ -22,17 +21,16 @@ public class RetrofitService {
     }
 
 
-    public List<ModuleDto> getModules(Integer courseId) {
-        logger.info(courseId.toString());
-        Call<List<ModuleDto>> call = apiClient.getModulesAssociatedWithCourse(courseId);
+    public SignatureDto getSignature() {
+        Call<SignatureDto> call = apiClient.getSignature();
         try {
-            Response<List<ModuleDto>> response = call.execute();
+            Response<SignatureDto> response = call.execute();
             if (response.isSuccessful() && response.body() != null) {
-                logger.info("Successfully fetched {} modules. Response code: {}",
-                        response.body().size(), response.code());
+                logger.info("Successfully fetched The signature. Response code: {}",
+                         response.code());
                 return response.body();
             } else {
-                logger.error("Failed to fetch modules. Response code: {}, Error: {}",
+                logger.error("Failed to fetch signature. Response code: {}, Error: {}",
                         response.code(), response.errorBody());
                 throw new UserNotFoundException("Failed to fetch modules. Response code: " + response.code());
             }

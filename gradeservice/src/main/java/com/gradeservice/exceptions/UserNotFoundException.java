@@ -1,4 +1,4 @@
-package com.studentservice.student.exceptions;
+package com.gradeservice.exceptions;
 
 public class UserNotFoundException extends RuntimeException {
     public UserNotFoundException(String message) {

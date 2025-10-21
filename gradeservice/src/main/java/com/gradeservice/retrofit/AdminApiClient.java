@@ -1,14 +1,13 @@
-package com.studentservice.student.configuration.retrofit;
+package com.gradeservice.retrofit;
 
 
+import com.shared.dtos.SignatureDto;
 import retrofit2.Call;
 import retrofit2.http.*;
-import com.shared.dtos.ModuleDto;
 
-import java.util.List;
 
 public interface AdminApiClient {
-    @GET("/course/get/module/{courseId}")
-    Call<List<ModuleDto>> getModulesAssociatedWithCourse(@Path("courseId") Integer courseId);
+    @GET("/admin/get/signature")
+    Call<SignatureDto> getSignature();
 
 }
