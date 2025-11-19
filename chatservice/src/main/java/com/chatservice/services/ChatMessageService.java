@@ -35,4 +35,7 @@ public class ChatMessageService {
             chatMessageRepository.save(msg);
         });
     }
+    public List<ChatMessage> getGroupConversation(Long groupId) {
+        return chatMessageRepository.findByGroupIdOrderByCreatedAtAsc(groupId);
+    }
 }

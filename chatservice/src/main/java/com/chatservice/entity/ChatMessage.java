@@ -31,4 +31,6 @@ public class ChatMessage {
     private LocalDateTime createdAt = LocalDateTime.now();
     @Column(name = "is_read")
     private boolean read = false;
+    @Column(name = "group_id")
+    private Long groupId;
 }

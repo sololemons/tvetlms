@@ -13,4 +13,6 @@ public interface MessageRepository extends JpaRepository<ChatMessage, Long> {
             String sender1, String receiver1,
             String sender2, String receiver2
     );
+
+    List<ChatMessage> findByGroupIdOrderByCreatedAtAsc(Long groupId);
 }

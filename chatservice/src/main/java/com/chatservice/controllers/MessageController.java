@@ -32,4 +32,8 @@ public class MessageController {
         chatMessageService.markAsRead(id);
         return ResponseEntity.ok().build();
     }
+    @GetMapping("/group/{groupId}")
+    public ResponseEntity<List<ChatMessage>> getGroupConversation(@PathVariable Long groupId) {
+        return ResponseEntity.ok(chatMessageService.getGroupConversation(groupId));
+    }
 }

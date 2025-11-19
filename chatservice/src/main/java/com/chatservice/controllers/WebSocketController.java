@@ -32,4 +32,12 @@ public class WebSocketController {
                 saved
         );
     }
+    @MessageMapping("/group")
+    public void sendGroup(@Payload ChatMessage message) {
+        ChatMessage saved = chatMessageService.saveMessage(message);
+        messagingTemplate.convertAndSend(
+                "/topic/group." + message.getGroupId(),
+                saved
+        );
+    }
 }
