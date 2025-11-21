@@ -5,6 +5,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
@@ -12,14 +14,19 @@ import lombok.NoArgsConstructor;
 @Table(name = "gamify_data")
 public class GamifyData {
     @Id
-    @Column(name = "gamify_id")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
     private int gamifyId;
-    @Column(name = "student_name")
-    private String studentName;
-    @Column(name = "student_id")
-    private int studentId;
-    @Column(name = "total_minutes")
-    private long totalMinutes;
-
+    @Column(name = "week_start")
+    private LocalDate weekStart;
+    @Column(name = "student_admission_id")
+    private String studentAdmissionId;
+    @Column(name = "week_end")
+    private LocalDate weekEnd;
+    @Column(name = "week_points")
+    private long weekPoints;
+    @Column(name = "updated_at")
+    private LocalDate updatedAt;
+    @Column(name = "status")
+    private Status status;
 }

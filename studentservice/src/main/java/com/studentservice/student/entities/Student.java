@@ -57,6 +57,8 @@ public class Student implements UserDetails {
     private Role role;
     @OneToMany(mappedBy = "student", cascade = CascadeType.ALL, orphanRemoval = true,fetch = FetchType.LAZY)
     private List<EnrolledCourses> enrolledCourses = new ArrayList<>();
+    @OneToMany(mappedBy = "student", cascade =  CascadeType.ALL, orphanRemoval = true,fetch = FetchType.LAZY)
+    private List<GamifyDataProfile>gamifyDataProfiles = new ArrayList<>();
 
 
     @Override
