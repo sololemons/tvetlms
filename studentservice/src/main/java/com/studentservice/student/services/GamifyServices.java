@@ -24,21 +24,22 @@ public class GamifyServices {
     private final StudentRepository studentRepository;
     private final GamifyDataProfileRepository gamifyDataProfileRepository;
     public String updateGamifyPoints(GamifyPointsDto dto) {
-
+        deactivateExpiredWeeks(dto.getAdmissionId());
         LocalDateTime now = LocalDateTime.now();
-        LocalDate today = now.toLocalDate();
 
-        LocalDate newWeekStart = today.with(DayOfWeek.MONDAY);
-        LocalDate newWeekEnd = today.with(DayOfWeek.SUNDAY);
+        LocalDateTime newWeekStart = now;
+        LocalDateTime newWeekEnd = now.plusHours(1);
 
-        List<GamifyData> records =gamifyDataRepository.findByStudentAdmissionId(dto.getAdmissionId());
+        List<GamifyData> records =
+                gamifyDataRepository.findByStudentAdmissionId(dto.getAdmissionId());
 
         GamifyData activeWeek = null;
 
         for (GamifyData record : records) {
             boolean withinRange =
-                    !now.toLocalDate().isBefore(record.getWeekStart()) &&
-                            !now.toLocalDate().isAfter(record.getWeekEnd());
+                    record.getStatus() == Status.ACTIVE &&
+                    !now.isBefore(record.getWeekStart()) &&
+                            !now.isAfter(record.getWeekEnd());
 
             if (withinRange) {
                 activeWeek = record;
@@ -48,11 +49,10 @@ public class GamifyServices {
 
         if (activeWeek != null) {
             activeWeek.setWeekPoints(activeWeek.getWeekPoints() + dto.getPoints());
-            activeWeek.setUpdatedAt(LocalDate.from(now));
+            activeWeek.setUpdatedAt(now.toLocalDate());
             gamifyDataRepository.save(activeWeek);
-            return "Points updated in current active week.";
+            return "Points updated in current active period.";
         }
-
 
         GamifyData gamifyData = new GamifyData();
         gamifyData.setStudentAdmissionId(dto.getAdmissionId());
@@ -64,8 +64,9 @@ public class GamifyServices {
 
         gamifyDataRepository.save(gamifyData);
 
-        return "New weekly record created and points added.";
+        return "New period created and points added.";
     }
+
     public GamifyData getActiveWeek(Principal principal) {
 
         String email = principal.getName();
@@ -92,6 +93,25 @@ public class GamifyServices {
                 .findByStudent_Email(email)
                 .orElseThrow(() -> new UserNotFoundException("Gamify profile not found"));
     }
+
+    public void deactivateExpiredWeeks(String admissionId) {
+
+        LocalDateTime today = LocalDateTime.now();
+
+        List<GamifyData> records =
+                gamifyDataRepository.findByStudentAdmissionId(admissionId);
+
+        for (GamifyData record : records) {
+
+            if (record.getWeekEnd().isBefore(today) &&
+                    record.getStatus() == Status.ACTIVE) {
+
+                record.setStatus(Status.INACTIVE);
+                gamifyDataRepository.save(record);
+            }
+        }
+    }
+
 
 
 }

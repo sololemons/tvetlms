@@ -5,19 +5,23 @@ import com.studentservice.student.exceptions.UserNotFoundException;
 import com.studentservice.student.repository.GamifyDataProfileRepository;
 import com.studentservice.student.repository.GamifyDataRepository;
 import com.studentservice.student.repository.StudentRepository;
+import com.studentservice.student.services.StudentServices;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.time.chrono.ChronoLocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class GamifyScheduler {
     private final GamifyDataRepository gamifyDataRepository;
     private final StudentRepository studentRepository;
@@ -27,12 +31,12 @@ public class GamifyScheduler {
     public void processWeeklyGamification() {
 
         LocalDateTime now = LocalDateTime.now();
-
+        log.info("GamifyScheduler executed at {}", now);
         List<GamifyData> activeWeeks = gamifyDataRepository.findByStatus(Status.ACTIVE);
 
         for (GamifyData activeWeek : activeWeeks) {
 
-            if (activeWeek.getWeekEnd().isAfter(ChronoLocalDate.from(now.plusMinutes(30)))) {
+            if (activeWeek.getWeekEnd().isAfter(now)) {
                 continue;
             }
 

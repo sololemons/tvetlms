@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Data
 @AllArgsConstructor
@@ -18,11 +19,11 @@ public class GamifyData {
     @Column(name = "id")
     private int gamifyId;
     @Column(name = "week_start")
-    private LocalDate weekStart;
+    private LocalDateTime weekStart;
     @Column(name = "student_admission_id")
     private String studentAdmissionId;
     @Column(name = "week_end")
-    private LocalDate weekEnd;
+    private LocalDateTime weekEnd;
     @Column(name = "week_points")
     private long weekPoints;
     @Column(name = "updated_at")
