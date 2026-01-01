@@ -1,5 +1,6 @@
 package com.staffservice.staffservice.controllers;
 
+import com.shared.dtos.AssignCourseDto;
 import com.shared.dtos.SubmissionDto;
 import com.staffservice.staffservice.dtos.*;
 import com.staffservice.staffservice.services.StaffService;
@@ -88,6 +89,11 @@ public class StaffController {
     @GetMapping("/get/ungraded/submissions")
     public ResponseEntity<List<SubmissionDto>> getUngradedSubmissions() {
         return ResponseEntity.ok(staffServices.getAllUngradedSubmissions());
+    }
+    @PostMapping("/assign/course")
+    public ResponseEntity<String> assignCourses(@RequestBody AssignCourseDto assignCourseDto){
+        return ResponseEntity.ok(staffServices.assignCourses(assignCourseDto));
+
     }
 
 

@@ -15,8 +15,6 @@ public class CourseOverview {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
     private int id;
-    @Column(name = "skill_level")
-    private String skillLevel;
     @Column(name = "duration")
     private String duration;
 

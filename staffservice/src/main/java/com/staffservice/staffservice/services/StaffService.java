@@ -1,12 +1,10 @@
 package com.staffservice.staffservice.services;
+import com.shared.dtos.*;
+import com.staffservice.staffservice.exceptions.MissingFieldException;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.shared.dtos.AnswerDto;
-import com.shared.dtos.StaffPayload;
-import com.shared.dtos.SubmissionDto;
-import com.shared.dtos.SubmissionRequestDto;
 import com.staffservice.staffservice.configuration.RabbitMQConfiguration;
 import com.staffservice.staffservice.dtos.*;
 import com.staffservice.staffservice.entities.*;
@@ -267,6 +265,16 @@ public class StaffService {
         return dto;
     }
 
+
+    public String assignCourses(AssignCourseDto assignCourseDto) {
+        if (assignCourseDto == null) {
+            return "AssignCourseDto cannot be null";
+        }
+
+        rabbitTemplate.convertAndSend(RabbitMQConfiguration.ASSIGN_COURSES, assignCourseDto);
+
+        return "Classnames assigned successfully:" + assignCourseDto.getClassName();
+    }
 
 }
 

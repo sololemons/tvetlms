@@ -157,7 +157,7 @@ public class StudentServices {
             enrolledModule.setEnrolledCourse(enrolledCourse);
             enrolledModule.setModuleName(module.getModuleName());
             enrolledModule.setDuration(module.getWeek());
-            enrolledModule.setModuleId(module.getModuleId());
+            enrolledModule.setModuleId((long) module.getModuleId());
             enrolledModulesRepository.save(enrolledModule);
         }
 

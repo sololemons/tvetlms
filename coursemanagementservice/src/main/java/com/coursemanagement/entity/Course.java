@@ -3,13 +3,15 @@ package com.coursemanagement.entity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
-import org.hibernate.annotations.Subselect;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Entity
 @Table(name = "course")
@@ -30,5 +32,15 @@ public class Course {
     private CourseOverview courseOverview;
     @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, orphanRemoval = true,fetch = FetchType.LAZY)
     @Fetch(FetchMode.SUBSELECT)
-    private List<CourseModule> modules = new ArrayList<>();
+    @EqualsAndHashCode.Exclude
+    private Set<CourseModule> modules = new HashSet<>();
+
+    @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @EqualsAndHashCode.Exclude
+    private Set<CatAssessment> cats = new HashSet<>();
+
+    @ElementCollection
+    @CollectionTable(name = "course_assigned_names", joinColumns = @JoinColumn(name = "course_id"))
+    @Column(name = "course_name")
+    private Set<String> assignedCourseNames = new HashSet<>();
 }

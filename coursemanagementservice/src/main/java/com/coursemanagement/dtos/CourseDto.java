@@ -1,5 +1,6 @@
 package com.coursemanagement.dtos;
 
+import com.coursemanagement.entity.CatAssessment;
 import com.shared.dtos.ModuleDto;
 import com.coursemanagement.entity.CourseOverview;
 import lombok.AllArgsConstructor;
@@ -15,5 +16,6 @@ public class CourseDto {
     private String courseName;
     private String description;
     private CourseOverview courseOverview;
+    private List<CatAssessmentDto> catAssessmentDto;
     private List<ModuleDto> moduleDto;
 }
