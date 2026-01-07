@@ -29,6 +29,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.security.Principal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -232,22 +233,26 @@ public class StudentServices {
                     .map(EnrolledCourseMapper::toDto)
                     .collect(Collectors.toList());
         }
-
+   @Transactional
     public List<GamifyProfilesDto> fetchGamifyProfiles() {
         List<GamifyDataProfile> gamifyDataProfiles = gamifyDataProfileRepository.findAll();
-
         return gamifyDataProfiles.stream()
                 .map(this::profilesToDto)
                 .collect(Collectors.toList());
     }
 
-    private GamifyProfilesDto profilesToDto(GamifyDataProfile gamifyDataProfile) {
-           return new GamifyProfilesDto(
-                   gamifyDataProfile.getTotalPoints(),
-                   gamifyDataProfile.getStudentName(),
-                   gamifyDataProfile.getBadgesAcquired()
-           );
+    private GamifyProfilesDto profilesToDto(GamifyDataProfile profile) {
+
+        GamifyProfilesDto dto = new GamifyProfilesDto();
+        dto.setTotalPoints(profile.getTotalPoints());
+        dto.setStudentName(profile.getStudentName());
+
+
+        dto.setBadgesAcquired(new HashMap<>(profile.getBadgesAcquired()));
+
+        return dto;
     }
+
 
     public String submitAssignment(
             SubmissionAssignmentDto dto,
