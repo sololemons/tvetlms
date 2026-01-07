@@ -1,6 +1,8 @@
 package com.studentservice.student.controllers;
 
 
+import com.shared.dtos.AssignmentSubmissionDto;
+import com.shared.dtos.SubmissionDto;
 import com.shared.dtos.SubmissionRequestDto;
 import com.studentservice.student.dtos.*;
 import com.studentservice.student.services.StudentServices;
@@ -8,8 +10,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.security.Principal;
 import java.util.List;
@@ -62,10 +66,7 @@ public class StudentController {
     public ResponseEntity<StudentDto> getStudent(Principal principal) {
         return ResponseEntity.ok(studentServices.getActiveStudent(principal));
     }
-    @PostMapping("/add/submission")
-    public ResponseEntity<String> submitAssignment(@RequestBody SubmissionRequestDto submissionRequestDto) {
-        return ResponseEntity.ok(studentServices.submitAssignment(submissionRequestDto));
-    }
+
     @PostMapping("/enroll/course")
     public ResponseEntity<String> enrollCourses(@RequestBody EnrollDto enrollDto){
         return ResponseEntity.ok(studentServices.enrollCourses(enrollDto));
@@ -82,6 +83,24 @@ public class StudentController {
     public  ResponseEntity<List<EnrolledCoursesDto>>fetchEnrolledCourses(Principal principal){
         return ResponseEntity.ok(studentServices.fetchAllEnrolledCourses(principal));
     }
+    @GetMapping("/get/gamify/profiles")
+    public ResponseEntity<List<GamifyProfilesDto>> fetchGamifyProfiles(){
+        return ResponseEntity.ok(studentServices.fetchGamifyProfiles());
+    }
+    @PostMapping(
+            value = "/submit/assignment",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
+    public ResponseEntity<String> submitAssignment(
+            @RequestPart("metadata") SubmissionAssignmentDto dto,
+            @RequestPart("files") List<MultipartFile> files,
+            Principal principal
+    ) {
+        return ResponseEntity.ok(
+                studentServices.submitAssignment(dto, files,principal)
+        );
+    }
+
 
 
 

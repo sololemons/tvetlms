@@ -1,8 +1,6 @@
 package com.coursemanagement.controllers;
 
-import com.coursemanagement.dtos.CourseDto;
-import com.coursemanagement.dtos.QuizGenerationRequest;
-import com.coursemanagement.dtos.UpdateCourseDto;
+import com.coursemanagement.dtos.*;
 import com.shared.dtos.ModuleDto;
 import com.coursemanagement.services.CourseService;
 import lombok.RequiredArgsConstructor;
@@ -36,6 +34,38 @@ public class CourseController {
     @PostMapping("/add/quiz/assessment")
     public ResponseEntity<String> generateQuizQuestions(@RequestBody QuizGenerationRequest quizGenerationRequest){
         return ResponseEntity.ok(courseService.generateQuiz(quizGenerationRequest));
+    }
+    @PostMapping("/add/cat/assessment")
+    public ResponseEntity<String> generateCatAssessment(@RequestBody QuizGenerationRequest quizGenerationRequest){
+        return ResponseEntity.ok(courseService.generateCatAssessment(quizGenerationRequest));
+    }
+    @PostMapping("/create/course")
+    public ResponseEntity<String> createCourse(@RequestBody CourseDto courseDto){
+        return ResponseEntity.ok(courseService.createCourse(courseDto));
+    }
+    @PostMapping("/create/module")
+    public ResponseEntity<String> createModule(@RequestBody CreateModuleDto createModuleDto){
+        return ResponseEntity.ok(courseService.createModule(createModuleDto));
+    }
+    @PostMapping("/create/cat")
+    public ResponseEntity<String>createCatAssessment(@RequestBody CreateCatDto createCatDto){
+        return ResponseEntity.ok(courseService.createCat(createCatDto));
+    }
+    @PostMapping("/create/quiz")
+    public ResponseEntity<String> createQuizAssessment(@RequestBody CreateQuizDto createQuizDto){
+        return ResponseEntity.ok(courseService.createQuiz(createQuizDto));
+    }
+    @PostMapping("/create/assignment")
+    public ResponseEntity<String> createAssignment(@RequestBody CreateAssignmentDto createAssignmentDto){
+        return ResponseEntity.ok(courseService.createAssignment(createAssignmentDto));
+    }
+    @GetMapping("/get/course/{courseId}")
+    public ResponseEntity<CourseDto> getFullCourse(@PathVariable Integer courseId){
+        return ResponseEntity.ok(courseService.getFullCourse(courseId));
+    }
+    @GetMapping("/get/course/active/{courseId}")
+    public ResponseEntity<CourseDto> getActiveCourse(@PathVariable Integer courseId){
+        return ResponseEntity.ok(courseService.getActiveCourses(courseId));
     }
 
 }

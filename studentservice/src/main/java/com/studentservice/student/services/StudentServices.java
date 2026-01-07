@@ -1,19 +1,21 @@
 package com.studentservice.student.services;
 
-import com.shared.dtos.CertificateRequestDto;
-import com.shared.dtos.SubmissionRequestDto;
+import com.shared.dtos.*;
 import com.studentservice.student.configuration.RabbitMQConfiguration;
 import com.studentservice.student.configuration.retrofit.RetrofitService;
 import com.studentservice.student.dtos.*;
-import com.shared.dtos.ModuleDto;
+import com.studentservice.student.dtos.StudentDto;
 import com.studentservice.student.entities.EnrolledCourses;
 import com.studentservice.student.entities.EnrolledModules;
+import com.studentservice.student.entities.GamifyDataProfile;
 import com.studentservice.student.entities.Student;
 import com.studentservice.student.exceptions.UserNotFoundException;
 import com.studentservice.student.repository.EnrolledModulesRepository;
 import com.studentservice.student.repository.EnrolledCourseRepository;
+import com.studentservice.student.repository.GamifyDataProfileRepository;
 import com.studentservice.student.repository.StudentRepository;
 import com.studentservice.student.utilis.EnrolledCourseMapper;
+import com.studentservice.student.utilis.FileStorageService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,9 +24,11 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.security.Principal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -38,6 +42,8 @@ public class StudentServices {
     private final EnrolledCourseRepository enrolledRepository;
     private final RetrofitService retrofitService;
     private final RabbitTemplate rabbitTemplate;
+    private final GamifyDataProfileRepository gamifyDataProfileRepository;
+    private final FileStorageService fileStorageService;
     private final Logger log = LoggerFactory.getLogger(StudentServices.class);
 
     public Page<StudentDto> getFilteredStudents(Long admissionId, Integer admissionYear, Pageable pageable) {
@@ -78,11 +84,7 @@ public class StudentServices {
         }
     }
 
-    public String submitAssignment(SubmissionRequestDto submissionRequestDto) {
-        rabbitTemplate.convertAndSend(RabbitMQConfiguration.ADD_ASSIGNMENT_QUEUE, submissionRequestDto);
-        log.info("SubmissionRequestDto: {} ", submissionRequestDto);
-        return "Assignment submitted";
-    }
+
 
 
     public StudentDto updateStudent(StudentDto studentDto) {
@@ -230,4 +232,61 @@ public class StudentServices {
                     .map(EnrolledCourseMapper::toDto)
                     .collect(Collectors.toList());
         }
+
+    public List<GamifyProfilesDto> fetchGamifyProfiles() {
+        List<GamifyDataProfile> gamifyDataProfiles = gamifyDataProfileRepository.findAll();
+
+        return gamifyDataProfiles.stream()
+                .map(this::profilesToDto)
+                .collect(Collectors.toList());
     }
+
+    private GamifyProfilesDto profilesToDto(GamifyDataProfile gamifyDataProfile) {
+           return new GamifyProfilesDto(
+                   gamifyDataProfile.getTotalPoints(),
+                   gamifyDataProfile.getStudentName(),
+                   gamifyDataProfile.getBadgesAcquired()
+           );
+    }
+
+    public String submitAssignment(
+            SubmissionAssignmentDto dto,
+            List<MultipartFile> files,
+            Principal principal
+    ) {
+        String email = principal.getName();
+        Student student = studentRepository.findByEmail(email).orElseThrow(() ->
+                new UserNotFoundException("Student not found with admission email: " + email));
+        String className = student.getClassName();
+        String admissionId = student.getAdmissionId();
+
+        for (MultipartFile file : files) {
+
+            String fileUrl = fileStorageService.storeFile(file);
+
+            AssignmentSubmissionDto event = new AssignmentSubmissionDto();
+            event.setStudentAdmissionId(admissionId);
+            event.setSubmissionType(SubmissionType.ASSIGNMENT);
+            event.setAssignmentId(dto.getAssignmentId());
+            event.setCourseId(dto.getCourseId());
+            event.setClassName(className);
+            event.setFileUrl(fileUrl);
+            event.setFileName(file.getOriginalFilename());
+            event.setFileType(file.getContentType());
+            event.setSubmissionDate(LocalDateTime.now());
+
+            rabbitTemplate.convertAndSend(
+                    RabbitMQConfiguration.ADD_ASSIGNMENT_QUEUE,
+                    event
+            );
+
+            log.info("Submission queued for assignment {}: file {}",
+                    dto.getAssignmentId(), file.getOriginalFilename());
+        }
+
+        return "Submission received and queued successfully";
+    }
+
+
+
+}

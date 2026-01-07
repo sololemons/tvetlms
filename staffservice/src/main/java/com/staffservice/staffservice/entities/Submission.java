@@ -1,9 +1,12 @@
 package com.staffservice.staffservice.entities;
 
+import com.shared.dtos.SubmissionType;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import java.util.List;
 
 @Data
 @Entity
@@ -23,11 +26,18 @@ public class Submission {
     private SubmissionStatus submissionStatus;
     @Column(name = "class_name")
     private String className;
+    @Column(name = "submission_type")
+    private SubmissionType submissionType;
+    @Column(name = "target_id")
+    private long targetId;
     @Column(name = "student_admission_id")
     private String studentAdmissionId;
+    @Column(name = "course_id")
+    private int courseId;
     @Column(name = "is_submitted")
     private boolean isSubmitted;
-    @Column(name = "assignment_id")
-    private long assignmentId;
+    @OneToMany(mappedBy = "submission", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<SubmissionFile> files;
+
 
 }

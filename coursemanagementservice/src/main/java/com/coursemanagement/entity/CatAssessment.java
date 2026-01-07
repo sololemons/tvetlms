@@ -1,10 +1,8 @@
 package com.coursemanagement.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
+import lombok.*;
+import org.antlr.v4.runtime.misc.NotNull;
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
 
@@ -28,6 +26,9 @@ public class CatAssessment {
     @Column(name = "title")
     private String title;
 
+    @Column(name = "cat_description")
+    private String catDescription;
+
     @Column(name = "duration_minutes")
     private int durationMinutes;
 
@@ -36,6 +37,14 @@ public class CatAssessment {
 
     @Column(name = "end_time")
     private LocalDateTime endTime;
+
+    @PrePersist
+    @PreUpdate
+    private void calculateEndTime() {
+        if (startTime != null && durationMinutes > 0) {
+            this.endTime = startTime.plusMinutes(durationMinutes);
+        }
+    }
 
    // @Column(name = "total_marks")
    // private int totalMarks;
@@ -51,3 +60,4 @@ public class CatAssessment {
     @JoinColumn(name = "course_id")
     private Course course;
 }
+

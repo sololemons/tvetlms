@@ -82,10 +82,12 @@ public class StaffController {
     public ResponseEntity<StaffDto> getStaff(Principal principal) {
         return ResponseEntity.ok(staffServices.getActiveStaff(principal));
     }
+    /*
     @GetMapping("/get/submissions/assignmentId")
     public ResponseEntity<List<SubmissionDto>> getSubmissionsByAssignmentId(@RequestParam Long assignmentId) {
         return ResponseEntity.ok(staffServices.getSubmissionsByAssignmentId(assignmentId));
     }
+     */
     @GetMapping("/get/ungraded/submissions")
     public ResponseEntity<List<SubmissionDto>> getUngradedSubmissions() {
         return ResponseEntity.ok(staffServices.getAllUngradedSubmissions());

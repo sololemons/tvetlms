@@ -28,6 +28,9 @@ public class CourseModule {
     @Column(name = "content")
     private String content;
 
+    @Column(name = "status")
+    private ModuleStatus status = ModuleStatus.INACTIVE;
+
     @OneToMany(mappedBy = "module", cascade = CascadeType.ALL, orphanRemoval = true)
     @EqualsAndHashCode.Exclude
     private Set<QuizAssessment> quizAssessments = new HashSet<>();

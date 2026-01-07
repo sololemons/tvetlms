@@ -31,6 +31,11 @@ public class WebSocketController {
                 "/queue/messages",
                 saved
         );
+        messagingTemplate.convertAndSendToUser(
+                message.getSender(),
+                "/queue/messages",
+                saved
+        );
     }
     @MessageMapping("/group")
     public void sendGroup(@Payload ChatMessage message) {

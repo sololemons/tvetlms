@@ -4,6 +4,7 @@ import com.coursemanagement.configuration.GroqClient;
 import com.coursemanagement.configuration.RabbitMQConfiguration;
 import com.coursemanagement.dtos.*;
 import com.coursemanagement.entity.*;
+import com.coursemanagement.repository.AssignmentRepository;
 import com.coursemanagement.repository.CourseModuleRepository;
 import com.coursemanagement.repository.CourseRepository;
 import com.coursemanagement.utility.MapperServices;
@@ -14,6 +15,7 @@ import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -26,19 +28,48 @@ public class CourseService {
 
     private final CourseRepository courseRepository;
     private final CourseModuleRepository courseModuleRepository;
+    private final AssignmentRepository assignmentRepository;
     private final GroqClient groqClient;
-    private MapperServices mapperServices;
+   private final MapperServices mapperServices;
+    public String createCourse(CourseDto courseDto) {
+        Course course = new Course();
+        course.setCourseName(courseDto.getCourseName());
+        course.setDescription(courseDto.getDescription());
+
+        CourseOverview courseOverview = new CourseOverview();
+        courseOverview.setDuration(courseDto.getCourseOverview().getDuration());
+        course.setCourseOverview(courseOverview);
+
+        courseRepository.save(course);
+        return "Course" + course.getCourseName() + "Created Successfully";
+
+    }
+    public String createModule(CreateModuleDto createModuleDto) {
+        Course course = courseRepository.findById(createModuleDto.getCourseId())
+                .orElseThrow(() -> new RuntimeException("Course not found with ID " + createModuleDto.getCourseId()));
+
+        CourseModule courseModule = new CourseModule();
+        courseModule.setModuleName(createModuleDto.getModuleName());
+        courseModule.setWeek(createModuleDto.getWeek());
+        courseModule.setContent(createModuleDto.getContent());
+        courseModule.setCourse(course);
+
+        courseModuleRepository.save(courseModule);
+        return "Module" + courseModule.getModuleName() + "Created Successfully In Course with Id" +createModuleDto.
+                getCourseId();
+
+    }
 
     @Transactional(readOnly = true)
     public List<CourseDto> getAllCourses() {
         List<Course> courses = courseRepository.findAllWithAssociations();
       return   courses.stream()
-                .map(course -> mapperServices.mapToDto(course))
+                .map(mapperServices::mapToDto)
                 .toList();
 
     }
 
-   // Add Course MANUALLY
+
     public String addCourses(CourseDto courseDto) {
 
         Course course = new Course();
@@ -133,11 +164,11 @@ public class CourseService {
         return "Course added successfully!";
     }
 
-
+    @Transactional
     public List<ModuleDto> getModules(Integer courseId) {
         List<CourseModule> courseModule = courseModuleRepository.findByCourse_CourseId(courseId);
         return courseModule.stream()
-                .map(module -> this.mapperServices.mapToDtoModule(module))
+                .map(this.mapperServices::mapToDtoModule)
                 .toList();
 
     }
@@ -207,6 +238,115 @@ public class CourseService {
         courseRepository.save(course);
 
     }
+
+    public String generateCatAssessment(QuizGenerationRequest quizGenerationRequest) {
+
+        CourseModule module = courseModuleRepository.findByCourse_CourseIdAndModuleIdAndStatus(quizGenerationRequest.getCourseId(),quizGenerationRequest.getModuleId(),ModuleStatus.ACTIVE)
+                .orElseThrow(() -> new IllegalArgumentException("Module not found"));
+        Course course = courseRepository.findByCourseId(quizGenerationRequest.getCourseId()).orElseThrow(() -> new IllegalArgumentException("Course Not found"));
+
+        String prompt = buildPrompt(
+                module,
+                quizGenerationRequest.getNoOfQuestions(),
+                quizGenerationRequest.getDifficulty()
+        );
+
+        GroqQuizResponse aiResponse = groqClient.generateQuiz(prompt);
+
+        mapperServices.mapAndSaveCat(aiResponse, course);
+        return "Quiz Generated Successfully";
+    }
+
+    @Transactional
+    public String createCat(CreateCatDto dto) {
+
+        Course course = courseRepository.findByCourseId(dto.getCourseId()).orElseThrow(() -> new IllegalArgumentException("Course Not found"));
+
+        CatAssessment cat = new CatAssessment();
+        cat.setTitle(dto.getCatTitle());
+        cat.setDurationMinutes(dto.getDurationMinutes());
+        cat.setStartTime(LocalDateTime.parse(dto.getStartTime()));
+        cat.setCatDescription(dto.getCatDescription());
+        cat.setCourse(course);
+
+        course.getCats().add(cat);
+
+        courseRepository.save(course);
+
+        return "Cat Created For course with id "+ cat.getCourse().getCourseId();
+    }
+    @Transactional
+    public String createQuiz(CreateQuizDto createQuizDto) {
+
+        Course course = courseRepository.findByCourseId(createQuizDto.getCourseId()).orElseThrow(() -> new IllegalArgumentException("Course Not found"));
+
+
+        CourseModule module = courseModuleRepository
+                .findByCourse_CourseIdAndModuleId(
+                        createQuizDto.getCourseId(),
+                        createQuizDto.getModuleId()
+                )
+                .orElseThrow(() -> new IllegalArgumentException("Module not found"));
+
+        QuizAssessment quiz = new QuizAssessment();
+        quiz.setTitle(createQuizDto.getQuizTitle());
+        quiz.setQuizAssessmentDescription(createQuizDto.getQuizDescription());
+        quiz.setDueDate(LocalDateTime.parse(createQuizDto.getDueDate()));
+        quiz.setModule(module);
+
+        module.getQuizAssessments().add(quiz);
+
+        courseModuleRepository.save(module);
+
+        return "Quiz created successfully with course Id "+ createQuizDto.getCourseId() +"and Module Id "+ createQuizDto.getModuleId();
+    }
+    @Transactional
+    public String createAssignment(CreateAssignmentDto dto) {
+
+        Course course = courseRepository.findByCourseId(Math.toIntExact(dto.getCourseId()))
+                .orElseThrow(() -> new IllegalArgumentException("Course not found"));
+
+        Assignments assignment = new Assignments();
+        assignment.setTitle(dto.getTitle());
+        assignment.setDescription(dto.getDescription());
+        assignment.setDueDate(LocalDateTime.parse(dto.getDueDate()));
+        assignment.setTotalMarks(dto.getTotalMarks());
+
+        assignment.setAllowDocuments(dto.isAllowDocuments());
+        assignment.setAllowImages(dto.isAllowImages());
+        assignment.setAllowVideos(dto.isAllowVideos());
+        assignment.setMaxFileSizeMb(dto.getMaxFileSizeMb());
+
+        assignment.setCourse(course);
+
+        assignmentRepository.save(assignment);
+
+        return "Assignment created successfully";
+    }
+
+
+    public CourseDto getFullCourse(Integer courseId) {
+
+        Course course = courseRepository.findByCourseId(courseId).orElseThrow(() -> new IllegalArgumentException("Course Not found"));
+
+        return mapperServices.mapToDto(course);
+
+    }
+
+    public CourseDto getActiveCourses(Integer courseId) {
+
+        Course course = courseRepository.findByCourseId(courseId)
+                .orElseThrow(() -> new IllegalArgumentException("Course not found"));
+
+        Set<CourseModule> activeModules = course.getModules().stream()
+                .filter(m -> m.getStatus() == ModuleStatus.ACTIVE)
+                .collect(Collectors.toSet());
+
+        course.setModules(activeModules);
+
+        return mapperServices.mapToDto(course);
+    }
+
 
 
 }

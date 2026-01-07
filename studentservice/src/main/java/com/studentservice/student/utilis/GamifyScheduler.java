@@ -55,6 +55,7 @@ public class GamifyScheduler {
                     .orElseGet(() -> {
                         GamifyDataProfile newProfile = new GamifyDataProfile();
                         newProfile.setStudent(student);
+                        newProfile.setStudentName(student.getFirstName() + " " + student.getLastName());
                         newProfile.setTotalPoints(0);
                         newProfile.setBadgesAcquired(new HashMap<>());
                         return newProfile;

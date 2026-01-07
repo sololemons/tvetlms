@@ -22,9 +22,13 @@ public class GamifyDataProfile {
     @Column(name = "total_points")
     private long totalPoints;
 
+    @Column(name = "student_name")
+    private String studentName;
+
     @ManyToOne
     @JoinColumn(name = "student_admission_id", referencedColumnName = "admission_id")
     private Student student;
+
 
     @ElementCollection
     @MapKeyEnumerated(EnumType.STRING)

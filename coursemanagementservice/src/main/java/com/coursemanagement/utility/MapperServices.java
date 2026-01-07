@@ -1,11 +1,9 @@
 package com.coursemanagement.utility;
 
 import com.coursemanagement.dtos.*;
-import com.coursemanagement.entity.Course;
-import com.coursemanagement.entity.CourseModule;
-import com.coursemanagement.entity.QuizAssessment;
-import com.coursemanagement.entity.QuizQuestions;
+import com.coursemanagement.entity.*;
 import com.coursemanagement.repository.CourseModuleRepository;
+import com.coursemanagement.repository.CourseRepository;
 import com.shared.dtos.ModuleDto;
 import com.shared.dtos.QuestionDto;
 import com.shared.dtos.QuizAssessmentDto;
@@ -21,6 +19,7 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class MapperServices {
+    private final CourseRepository courseRepository;
     private CourseModuleRepository courseModuleRepository;
     @Transactional
     public void mapAndSaveQuiz(GroqQuizResponse aiResponse, CourseModule module) {
@@ -160,6 +159,57 @@ public class MapperServices {
         }).toList();
 
         return new ModuleDto(courseModule.getWeek(), courseModule.getModuleName(), courseModule.getContent(), courseModule.getModuleId(), quizDto);
+    }
+    @Transactional
+    public void mapAndSaveCat(GroqQuizResponse aiResponse, Course course) {
+
+        CatAssessment cat = new CatAssessment();
+        cat.setCourse(course);
+
+        Set<CatQuestions> questions = new HashSet<>();
+
+        if (aiResponse.getMcqQuestions() != null) {
+            questions.addAll(aiResponse.getMcqQuestions().stream().map(q -> {
+                CatQuestions qq = new CatQuestions();
+                qq.setQuestionText(q.getQuestionText());
+                qq.setMarks(q.getPoints());
+                qq.setCorrectAnswer(q.getCorrectAnswer());
+                qq.setOptions(q.getOptions() == null ? new HashSet<>() :
+                        q.getOptions().stream().map(OptionDto::getText).collect(Collectors.toSet()));
+                qq.setCatAssessment(cat);
+                return qq;
+            }).collect(Collectors.toSet()));
+        }
+
+        if (aiResponse.getTrueFalseQuestions() != null) {
+            questions.addAll(aiResponse.getTrueFalseQuestions().stream().map(q -> {
+                CatQuestions qq = new CatQuestions();
+                qq.setQuestionText(q.getQuestionText());
+                qq.setMarks(q.getPoints());
+                // qq.setCorrectAnswer(q.getCorrectAnswer().toString());
+                qq.setOptions(Set.of("True", "False"));
+                qq.setCatAssessment(cat);
+                return qq;
+            }).collect(Collectors.toSet()));
+        }
+
+        // Map Open-ended questions
+        if (aiResponse.getOpenEndedQuestions() != null) {
+            questions.addAll(aiResponse.getOpenEndedQuestions().stream().map(q -> {
+                CatQuestions qq = new CatQuestions();
+                qq.setQuestionText(q.getQuestionText());
+                qq.setMarks(q.getPoints());
+                // qq.setCorrectAnswer(q.getCorrectAnswer());
+                qq.setOptions(new HashSet<>());
+                qq.setCatAssessment(cat);
+                return qq;
+            }).collect(Collectors.toSet()));
+        }
+
+        cat.setCatQuestions(questions);
+
+        course.getCats().add(cat);
+        courseRepository.save(course);
     }
 
 }

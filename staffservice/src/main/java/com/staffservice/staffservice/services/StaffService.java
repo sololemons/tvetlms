@@ -1,6 +1,7 @@
 package com.staffservice.staffservice.services;
 import com.shared.dtos.*;
 import com.staffservice.staffservice.exceptions.MissingFieldException;
+import com.staffservice.staffservice.repositories.*;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -10,10 +11,6 @@ import com.staffservice.staffservice.dtos.*;
 import com.staffservice.staffservice.entities.*;
 import com.staffservice.staffservice.entities.Class;
 import com.staffservice.staffservice.exceptions.UserNotFoundException;
-import com.staffservice.staffservice.repositories.AssignmentRepository;
-import com.staffservice.staffservice.repositories.ClassRepository;
-import com.staffservice.staffservice.repositories.StaffRepository;
-import com.staffservice.staffservice.repositories.SubmissionRepository;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,6 +41,7 @@ public class StaffService {
     private final AssignmentRepository assignmentRepository;
     private final ClassRepository classRepository;
     private final SubmissionRepository submissionRepository;
+    private final SubmissionFileRepository submissionFileRepository;
 
 
     public List<StaffDto> getAllStaffMembers() {
@@ -169,7 +167,7 @@ public class StaffService {
                 .map(AssignmentMapper::toDto)
                 .toList();
     }
-
+   /*
     @RabbitListener(queues = RabbitMQConfiguration.ADD_ASSIGNMENT_QUEUE)
     public void addSubmission(SubmissionRequestDto submissionRequestDto) {
         Optional<Submission> submissionOpt =
@@ -193,7 +191,7 @@ public class StaffService {
                 submission.setSubmissionStatus(SubmissionStatus.UNGRADED);
                 submission.setSubmitted(true);
                 submission.setStudentAdmissionId(submissionRequestDto.getAdmissionId());
-                submission.setAssignmentId(submissionRequestDto.getAssignmentId());
+              //  submission.setAssignmentId(submissionRequestDto.getAssignmentId());
                 submission.setSubmissionDate(LocalDateTime.now().toString());
                 submissionRepository.save(submission);
                 log.info("SubmissionRequest loaded: {}", submissionRequestDto);
@@ -203,6 +201,7 @@ public class StaffService {
             throw new RuntimeException("Failed to save submission", e);
         }
     }
+*/
 
 
     public List<SubmissionDto> getSubmissions(String studentAdmissionId) {
@@ -226,11 +225,11 @@ public class StaffService {
 
         return mapToDto(staff);
     }
-
-    public List<SubmissionDto> getSubmissionsByAssignmentId(Long assignmentId) {
+/*
+   public List<SubmissionDto> getSubmissionsByAssignmentId(Long assignmentId) {
         return submissionRepository.findByAssignmentId(assignmentId).stream().map(this::mapToDto).toList();
     }
-
+*/
     public List<SubmissionDto> getAllUngradedSubmissions() {
         return submissionRepository.findAllBySubmissionStatus(SubmissionStatus.UNGRADED).stream().map(this::mapToDto).toList();
     }
@@ -243,7 +242,7 @@ public class StaffService {
     private SubmissionDto mapToDto(Submission sub) {
         SubmissionDto dto = new SubmissionDto();
         dto.setSubmissionId((long) sub.getSubmissionId());
-        dto.setAssignmentId(sub.getAssignmentId());
+     //   dto.setAssignmentId(sub.getAssignmentId());
         dto.setClassName(sub.getClassName());
         dto.setStudentAdmissionId(sub.getStudentAdmissionId());
         dto.setSubmissionDate(LocalDateTime.parse(sub.getSubmissionDate()));
@@ -274,7 +273,41 @@ public class StaffService {
         rabbitTemplate.convertAndSend(RabbitMQConfiguration.ASSIGN_COURSES, assignCourseDto);
 
         return "Classnames assigned successfully:" + assignCourseDto.getClassName();
+
     }
+    @RabbitListener(queues = RabbitMQConfiguration.ADD_ASSIGNMENT_QUEUE)
+    @Transactional
+    public void consumeAssignmentSubmission(AssignmentSubmissionDto event) {
+
+        log.info("Received Submission {}" ,event);
+
+        Submission submission = new Submission();
+        submission.setStudentAdmissionId(event.getStudentAdmissionId());
+        submission.setSubmissionType(event.getSubmissionType());
+        submission.setTargetId(event.getAssignmentId());
+        submission.setCourseId(event.getCourseId());
+        submission.setClassName(event.getClassName());
+        submission.setSubmissionDate(String.valueOf(event.getSubmissionDate()));
+        submission.setSubmissionStatus(SubmissionStatus.UNGRADED);
+        submission.setSubmitted(true);
+
+        log.info("Assignment submission created successfully of Id : {}",submission.getSubmissionId());
+
+        Submission saved = submissionRepository.save(submission);
+
+        SubmissionFile file = new SubmissionFile();
+        file.setFileName(event.getFileName());
+        file.setFileType(event.getFileType());
+        file.setFileUrl(event.getFileUrl());
+        file.setSubmission(saved);
+
+        log.info("Submission File saved {} with filename", file.getFileName());
+
+        submissionFileRepository.save(file);
+    }
+
+
+
 
 }
 

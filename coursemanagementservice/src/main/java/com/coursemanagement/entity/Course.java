@@ -39,6 +39,10 @@ public class Course {
     @EqualsAndHashCode.Exclude
     private Set<CatAssessment> cats = new HashSet<>();
 
+    @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @EqualsAndHashCode.Exclude
+    private Set<Assignments> assignments = new HashSet<>();
+
     @ElementCollection
     @CollectionTable(name = "course_assigned_names", joinColumns = @JoinColumn(name = "course_id"))
     @Column(name = "course_name")

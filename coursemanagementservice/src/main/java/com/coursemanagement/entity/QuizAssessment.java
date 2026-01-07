@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 
@@ -24,6 +25,12 @@ public class QuizAssessment {
 
     @Column(name = "title")
     private String title;
+
+    @Column(name = "quiz_assessment_description")
+    private String quizAssessmentDescription;
+
+    @Column(name = "due_date")
+    private LocalDateTime dueDate;
 
    // @Column(name = "total_marks")
    // private int totalMarks;

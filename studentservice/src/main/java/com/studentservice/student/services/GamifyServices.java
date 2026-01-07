@@ -27,7 +27,6 @@ public class GamifyServices {
         deactivateExpiredWeeks(dto.getAdmissionId());
         LocalDateTime now = LocalDateTime.now();
 
-        LocalDateTime newWeekStart = now;
         LocalDateTime newWeekEnd = now.plusHours(1);
 
         List<GamifyData> records =
@@ -56,7 +55,7 @@ public class GamifyServices {
 
         GamifyData gamifyData = new GamifyData();
         gamifyData.setStudentAdmissionId(dto.getAdmissionId());
-        gamifyData.setWeekStart(newWeekStart);
+        gamifyData.setWeekStart(now);
         gamifyData.setWeekEnd(newWeekEnd);
         gamifyData.setWeekPoints(dto.getPoints());
         gamifyData.setUpdatedAt(now.toLocalDate());
