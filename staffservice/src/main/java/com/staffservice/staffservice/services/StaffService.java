@@ -305,6 +305,99 @@ public class StaffService {
 
         submissionFileRepository.save(file);
     }
+    @RabbitListener(queues = RabbitMQConfiguration.ADD_CAT_SUBMISSION_QUEUE)
+    public void addCatSubmission(CatSubmissionDto submissionDto) {
+
+        Optional<Submission> submissionOpt =
+                submissionRepository.findByStudentAdmissionIdAndTargetIdAndSubmissionTypeAndCourseId(
+                        submissionDto.getStudentAdmissionId(),
+                        (long) submissionDto.getCatId(),
+                        SubmissionType.CAT,
+                        submissionDto.getCourseId()
+                );
+
+        try {
+            // Convert structured answers to JSON
+            String jsonAnswers =
+                    objectMapper.writeValueAsString(submissionDto.getAnswerText());
+
+            if (submissionOpt.isPresent()) {
+
+                Submission existing = submissionOpt.get();
+                existing.setSubmissionText(jsonAnswers);
+                existing.setSubmissionDate(String.valueOf(LocalDateTime.now()));
+                submissionRepository.save(existing);
+
+            } else {
+
+                Submission submission = new Submission();
+                submission.setStudentAdmissionId(submissionDto.getStudentAdmissionId());
+                submission.setClassName(submissionDto.getClassName());
+                submission.setSubmissionType(SubmissionType.CAT);
+                submission.setTargetId((long) submissionDto.getCatId());
+                submission.setCourseId(submissionDto.getCourseId());
+                submission.setSubmissionText(jsonAnswers);
+                submission.setSubmissionStatus(SubmissionStatus.UNGRADED);
+                submission.setSubmitted(true);
+                submission.setSubmissionDate(String.valueOf(LocalDateTime.now()));
+
+                submissionRepository.save(submission);
+
+                log.info("CAT submission saved: {} from course with id {} and Cat Id {} ", submission,
+                        submissionDto.getCourseId(),submissionDto.getCatId());
+            }
+
+        } catch (Exception e) {
+            log.error("Failed to save CAT submission", e);
+            throw new RuntimeException("Failed to save CAT submission", e);
+        }
+    }
+    @RabbitListener(queues = RabbitMQConfiguration.ADD_QUIZ_SUBMISSION_QUEUE)
+    public void addQuizSubmission(QuizSubmissionDto submissionDto) {
+
+        Optional<Submission> submissionOpt =
+                submissionRepository.findByStudentAdmissionIdAndTargetIdAndSubmissionTypeAndCourseId(
+                        submissionDto.getStudentAdmissionId(),
+                        (long) submissionDto.getQuizId(),
+                        SubmissionType.CAT,
+                        submissionDto.getCourseId()
+                );
+
+        try {
+            // Convert structured answers to JSON
+            String jsonAnswers =
+                    objectMapper.writeValueAsString(submissionDto.getAnswerText());
+
+            if (submissionOpt.isPresent()) {
+
+                Submission existing = submissionOpt.get();
+                existing.setSubmissionText(jsonAnswers);
+                existing.setSubmissionDate(String.valueOf(LocalDateTime.now()));
+                submissionRepository.save(existing);
+
+            } else {
+
+                Submission submission = new Submission();
+                submission.setStudentAdmissionId(submissionDto.getStudentAdmissionId());
+                submission.setClassName(submissionDto.getClassName());
+                submission.setSubmissionType(SubmissionType.CAT);
+                submission.setTargetId((long) submissionDto.getQuizId());
+                submission.setCourseId(submissionDto.getCourseId());
+                submission.setSubmissionText(jsonAnswers);
+                submission.setSubmissionStatus(SubmissionStatus.UNGRADED);
+                submission.setSubmitted(true);
+                submission.setSubmissionDate(String.valueOf(LocalDateTime.now()));
+
+                submissionRepository.save(submission);
+
+                log.info("Quiz submission saved: {} for Course with id: {} and module Id: {} ", submission, submissionDto.getCourseId(),submissionDto.getModuleId());
+            }
+
+        } catch (Exception e) {
+            log.error("Failed to save Quiz submission", e);
+            throw new RuntimeException("Failed to save Quiz submission", e);
+        }
+    }
 
 
 

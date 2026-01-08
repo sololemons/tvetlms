@@ -100,6 +100,15 @@ public class StudentController {
                 studentServices.submitAssignment(dto, files,principal)
         );
     }
+    @PostMapping("/submit/cat")
+    public ResponseEntity<String> submitCat(@RequestBody SubmissionCatDto submissionCatDto ,Principal principal){
+        return ResponseEntity.ok(studentServices.submitCat(submissionCatDto,principal));
+    }
+    @PostMapping("/submit/quiz")
+    public ResponseEntity<String> submitQuiz(@RequestBody SubmissionQuizDto submissionQuizDto  ,Principal principal){
+        return ResponseEntity.ok(studentServices.submitQuiz(submissionQuizDto,principal));
+    }
+
 
 
 

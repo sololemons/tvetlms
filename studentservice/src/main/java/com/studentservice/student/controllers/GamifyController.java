@@ -1,6 +1,7 @@
 package com.studentservice.student.controllers;
 
 import com.studentservice.student.dtos.GamifyPointsDto;
+import com.studentservice.student.dtos.GamifyProfilesDto;
 import com.studentservice.student.entities.GamifyBadges;
 import com.studentservice.student.entities.GamifyData;
 import com.studentservice.student.entities.GamifyDataProfile;
@@ -25,7 +26,7 @@ public class GamifyController {
         return gamifyServices.getActiveWeek(principal);
     }
     @GetMapping("/get/gamify/profile")
-    public ResponseEntity<GamifyDataProfile> getGamifyProfile(Principal principal) {
+    public ResponseEntity<GamifyProfilesDto> getGamifyProfile(Principal principal) {
         return ResponseEntity.ok(gamifyServices.getGamifyProfile(principal));
     }
 

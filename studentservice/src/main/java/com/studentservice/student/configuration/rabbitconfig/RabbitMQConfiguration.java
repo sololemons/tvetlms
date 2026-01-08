@@ -1,8 +1,6 @@
-package com.studentservice.student.configuration;
+package com.studentservice.student.configuration.rabbitconfig;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.amqp.core.Binding;
-import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.FanoutExchange;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
@@ -17,31 +15,43 @@ import org.springframework.context.annotation.Configuration;
 public class RabbitMQConfiguration {
 
     public static final String GENERATE_CERTIFICATE_QUEUE = "generate_certificate_queue";
-    public   static  final String CHECK_ROLE_EXCHANGE = "check_role_exchange";
+    public static final String CHECK_ROLE_EXCHANGE = "check_role_exchange";
     public static final String ADD_STUDENT_QUEUE = "add_student_queue";
     public static final String ADD_ASSIGNMENT_QUEUE = "add_assignment_queue";
-
-
-@Bean
-public Queue addStudentQueue() {
-    return new Queue(ADD_STUDENT_QUEUE);
-}
-@Bean
-public Queue generateCertificateQueue() {
-    return new Queue(GENERATE_CERTIFICATE_QUEUE);
-}
+    public static final String ADD_CAT_SUBMISSION_QUEUE = "add_cat_submission_queue";
+    public static final String ADD_QUIZ_SUBMISSION_QUEUE = "add_quiz_submission_queue";
 
 
     @Bean
-    public Queue addAssignment(){
-    return new Queue(ADD_ASSIGNMENT_QUEUE);
+    public Queue addStudentQueue() {
+        return new Queue(ADD_STUDENT_QUEUE);
+    }
+
+    @Bean
+    public Queue generateCertificateQueue() {
+        return new Queue(GENERATE_CERTIFICATE_QUEUE);
+    }
+
+
+    @Bean
+    public Queue addAssignment() {
+        return new Queue(ADD_ASSIGNMENT_QUEUE);
+    }
+
+    @Bean
+    public Queue addCatSubmissionQueue() {
+        return new Queue(ADD_CAT_SUBMISSION_QUEUE);
+    }
+
+    @Bean
+    public Queue addQuizSubmissionQueue() {
+        return new Queue((ADD_QUIZ_SUBMISSION_QUEUE));
     }
 
     @Bean
     public FanoutExchange checkRoleExchange() {
         return new FanoutExchange(CHECK_ROLE_EXCHANGE);
     }
-
 
 
     @Bean

@@ -1,7 +1,7 @@
 package com.studentservice.student.services;
 
 import com.shared.dtos.*;
-import com.studentservice.student.configuration.RabbitMQConfiguration;
+import com.studentservice.student.configuration.rabbitconfig.RabbitMQConfiguration;
 import com.studentservice.student.configuration.retrofit.RetrofitService;
 import com.studentservice.student.dtos.*;
 import com.studentservice.student.dtos.StudentDto;
@@ -241,7 +241,7 @@ public class StudentServices {
                 .collect(Collectors.toList());
     }
 
-    private GamifyProfilesDto profilesToDto(GamifyDataProfile profile) {
+    public GamifyProfilesDto profilesToDto(GamifyDataProfile profile) {
 
         GamifyProfilesDto dto = new GamifyProfilesDto();
         dto.setTotalPoints(profile.getTotalPoints());
@@ -293,5 +293,55 @@ public class StudentServices {
     }
 
 
+    public String submitCat(SubmissionCatDto submissionCatDto, Principal principal) {
+        String email = principal.getName();
+        Student student = studentRepository.findByEmail(email).orElseThrow(() ->
+                new UserNotFoundException("Student not found with admission email: " + email));
+        String className = student.getClassName();
+        String admissionId = student.getAdmissionId();
 
+        CatSubmissionDto catSubmissionDto = new CatSubmissionDto();
+        catSubmissionDto.setCatId(submissionCatDto.getCatId());
+        catSubmissionDto.setSubmissionType(SubmissionType.CAT);
+        catSubmissionDto.setCourseId(submissionCatDto.getCourseId());
+        catSubmissionDto.setStudentAdmissionId(admissionId);
+        catSubmissionDto.setClassName(className);
+        catSubmissionDto.setAnswerText(submissionCatDto.getAnswers());
+        catSubmissionDto.setSubmissionDate(LocalDateTime.now());
+
+        rabbitTemplate.convertAndSend(
+                RabbitMQConfiguration.ADD_CAT_SUBMISSION_QUEUE,
+                catSubmissionDto
+        );
+
+        return "CAT submitted successfully";
+
+    }
+
+    public String submitQuiz(SubmissionQuizDto submissionQuizDto, Principal principal) {
+        String email = principal.getName();
+        Student student = studentRepository.findByEmail(email).orElseThrow(() ->
+                new UserNotFoundException("Student not found with admission email: " + email));
+        String className = student.getClassName();
+        String admissionId = student.getAdmissionId();
+
+        QuizSubmissionDto quizSubmissionDto = new QuizSubmissionDto();
+        quizSubmissionDto.setQuizId(submissionQuizDto.getQuizId());
+
+        quizSubmissionDto.setSubmissionType(SubmissionType.QUIZ);
+        quizSubmissionDto.setStudentAdmissionId(admissionId);
+        quizSubmissionDto.setClassName(className);
+        quizSubmissionDto.setAnswerText(submissionQuizDto.getAnswers());
+        quizSubmissionDto.setCourseId(submissionQuizDto.getCourseId());
+        quizSubmissionDto.setModuleId(submissionQuizDto.getModuleId());
+        quizSubmissionDto.setSubmissionDate(LocalDateTime.now());
+
+        rabbitTemplate.convertAndSend(
+                RabbitMQConfiguration.ADD_QUIZ_SUBMISSION_QUEUE,
+                quizSubmissionDto
+        );
+
+        return "CAT submitted successfully";
+
+    }
 }
