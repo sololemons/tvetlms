@@ -1,6 +1,7 @@
 package com.staffservice.staffservice.controllers;
 
 import com.shared.dtos.AssignCourseDto;
+import com.shared.dtos.NotificationRequestDto;
 import com.shared.dtos.SubmissionDto;
 import com.staffservice.staffservice.dtos.*;
 import com.staffservice.staffservice.services.StaffService;
@@ -97,6 +98,13 @@ public class StaffController {
         return ResponseEntity.ok(staffServices.assignCourses(assignCourseDto));
 
     }
+    @PostMapping("/create/notification")
+    public ResponseEntity<String> createNotification(@RequestBody NotificationRequestDto notificationRequestDto){
+        return ResponseEntity.ok(staffServices.createNotification(notificationRequestDto));
+    }
+
+
+
 
 
 

@@ -20,6 +20,8 @@ public class RabbitMQConfiguration {
     public static final String ADD_ASSIGNMENT_QUEUE = "add_assignment_queue";
     public static final String ADD_CAT_SUBMISSION_QUEUE = "add_cat_submission_queue";
     public static final String ADD_QUIZ_SUBMISSION_QUEUE = "add_quiz_submission_queue";
+    public static final String GET_NOTIFICATIONS = "get_notifications";
+
 
 
     @Bean
@@ -47,6 +49,8 @@ public class RabbitMQConfiguration {
     public Queue addQuizSubmissionQueue() {
         return new Queue((ADD_QUIZ_SUBMISSION_QUEUE));
     }
+    @Bean
+    public Queue getNotificationsQueue(){return new Queue(GET_NOTIFICATIONS);}
 
     @Bean
     public FanoutExchange checkRoleExchange() {

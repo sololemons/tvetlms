@@ -400,6 +400,13 @@ public class StaffService {
     }
 
 
+    public String createNotification(NotificationRequestDto notificationRequestDto) {
+        if (notificationRequestDto != null) {
+            notificationRequestDto.setDate(LocalDateTime.now());
+            rabbitTemplate.convertAndSend(RabbitMQConfiguration.ADD_NOTIFICATIONS,notificationRequestDto);
+        }
+        return "Notification Sent From Staff Service";
+    }
 
 
 }

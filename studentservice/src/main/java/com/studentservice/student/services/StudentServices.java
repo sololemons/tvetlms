@@ -344,4 +344,30 @@ public class StudentServices {
         return "CAT submitted successfully";
 
     }
+
+    public List<NotificationDto> getNotifications(Principal principal) {
+
+        String email = principal.getName();
+
+        Student student = studentRepository.findByEmail(email)
+                .orElseThrow(() -> new UserNotFoundException("Student not found"));
+
+        String className = student.getClassName();
+
+        GetNotificationDto request = new GetNotificationDto(className);
+
+        NotificationsResponse response = (NotificationsResponse) rabbitTemplate.convertSendAndReceive(
+                RabbitMQConfiguration.GET_NOTIFICATIONS,
+                request
+        );
+
+        if (response == null) {
+            throw new RuntimeException("Notification service did not respond");
+        }
+
+        return response.getNotifications();
+
+    }
+
+
 }

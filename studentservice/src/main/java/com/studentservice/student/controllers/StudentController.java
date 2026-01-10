@@ -2,6 +2,7 @@ package com.studentservice.student.controllers;
 
 
 import com.shared.dtos.AssignmentSubmissionDto;
+import com.shared.dtos.NotificationDto;
 import com.shared.dtos.SubmissionDto;
 import com.shared.dtos.SubmissionRequestDto;
 import com.studentservice.student.dtos.*;
@@ -107,6 +108,10 @@ public class StudentController {
     @PostMapping("/submit/quiz")
     public ResponseEntity<String> submitQuiz(@RequestBody SubmissionQuizDto submissionQuizDto  ,Principal principal){
         return ResponseEntity.ok(studentServices.submitQuiz(submissionQuizDto,principal));
+    }
+    @GetMapping("/get/notifications")
+    public ResponseEntity<List<NotificationDto>> getNotifications(Principal principal){
+        return ResponseEntity.ok(studentServices.getNotifications(principal));
     }
 
 

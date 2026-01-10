@@ -1,4 +1,4 @@
-package com.staffservice.staffservice.configuration;
+package com.notificationservice.configuration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.amqp.core.Queue;
@@ -12,64 +12,19 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class RabbitMQConfiguration {
-    public static final String CHECK_ROLE_1 = "check_role_queue_1";
-    public static final String ADD_STAFF_QUEUE = "add_staff_queue";
-    public static final String ADD_ASSIGNMENT_QUEUE = "add_assignment_queue";
-    public static final String GRADING_REQUEST_QUEUE = "grading_request_queue";
-    public static final String GRADING_RESPONSE_QUEUE = "grading_response_queue";
-    public static final String ASSIGN_COURSES = "assign_courses";
-    public static final String ADD_CAT_SUBMISSION_QUEUE = "add_cat_submission_queue";
-    public static final String ADD_QUIZ_SUBMISSION_QUEUE = "add_quiz_submission_queue";
     public static final String ADD_NOTIFICATIONS = "add_notifications";
     public static final String GET_NOTIFICATIONS = "get_notifications";
 
 
-
     @Bean
-    public Queue gradingRequestQueue() {
-        return new Queue(GRADING_REQUEST_QUEUE);
-    }
-
-    @Bean
-    public Queue getNotificationsQueue(){return new Queue(GET_NOTIFICATIONS);}
-
-    @Bean
-    public Queue assignCourseName() {
-        return new Queue(ASSIGN_COURSES);
-    }
-
-    @Bean
-    public Queue gradingResponseQueue() {
-        return new Queue(GRADING_RESPONSE_QUEUE);
-    }
-
-    @Bean
-    public Queue checkRoleQueue1() {
-        return new Queue(CHECK_ROLE_1);
-    }
-
-    @Bean
-    public Queue assignmentQueue() {
-        return new Queue(ADD_ASSIGNMENT_QUEUE);
-    }
-
-    @Bean
-    public Queue addCatSubmissionQueue() {
-        return new Queue(ADD_CAT_SUBMISSION_QUEUE);
-    }
-
-    @Bean
-    public Queue addQuizSubmissionQueue(){return new Queue(ADD_QUIZ_SUBMISSION_QUEUE);}
-    @Bean
-    public Queue addNotificationQueue() {
+    public Queue addNotificationsQueue() {
         return new Queue(ADD_NOTIFICATIONS);
     }
-
-
     @Bean
-    public Queue addStaffQueue() {
-        return new Queue(ADD_STAFF_QUEUE);
+    public Queue getNotificationsQueue() {
+        return new Queue(GET_NOTIFICATIONS);
     }
+
 
 
     @Bean
