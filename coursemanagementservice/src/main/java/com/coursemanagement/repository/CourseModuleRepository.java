@@ -17,4 +17,5 @@ public interface CourseModuleRepository extends JpaRepository<CourseModule, Inte
 
     Optional<CourseModule> findByCourse_CourseIdAndModuleIdAndStatus(int courseId, int moduleId, ModuleStatus moduleStatus);
 
+    Optional<CourseModule> findByCourse_CourseIdAndStatus(int courseId, ModuleStatus moduleStatus);
 }

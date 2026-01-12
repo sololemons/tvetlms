@@ -8,72 +8,79 @@ import com.shared.dtos.ModuleDto;
 import com.shared.dtos.QuestionDto;
 import com.shared.dtos.QuizAssessmentDto;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class MapperServices {
     private final CourseRepository courseRepository;
-    private CourseModuleRepository courseModuleRepository;
+    private final CourseModuleRepository courseModuleRepository;
+
     @Transactional
-    public void mapAndSaveQuiz(GroqQuizResponse aiResponse, CourseModule module) {
+    public void mapAndSaveQuiz(GroqQuizResponse aiResponse, CourseModule module, QuizAssessment quizAssessment) {
+        log.info("AI response {}", aiResponse);
 
-        QuizAssessment quiz = new QuizAssessment();
-        quiz.setModule(module);
+        quizAssessment.setModule(module);
 
-        Set<QuizQuestions> questions = new HashSet<>();
+        if (quizAssessment.getQuizQuestions() == null) {
+            quizAssessment.setQuizQuestions(new HashSet<>());
+        }
 
-        if (aiResponse.getMcqQuestions() != null) {
-            questions.addAll(aiResponse.getMcqQuestions().stream().map(q -> {
+        quizAssessment.getQuizQuestions().clear();
+
+        if (aiResponse.getMultiple_choice() != null) {
+            aiResponse.getMultiple_choice().forEach(q -> {
                 QuizQuestions qq = new QuizQuestions();
-                qq.setQuestionText(q.getQuestionText());
-                qq.setMarks(q.getPoints());
-                qq.setCorrectAnswer(q.getCorrectAnswer());
+                qq.setQuestionText(q.getQuestion());
+                qq.setMarks(1);
+                qq.setCorrectAnswer(q.getCorrect_answer());
                 qq.setOptions(q.getOptions() == null ? new HashSet<>() :
-                        q.getOptions().stream().map(OptionDto::getText).collect(Collectors.toSet()));
-                qq.setQuizAssessment(quiz);
-                return qq;
-            }).collect(Collectors.toSet()));
+                        new HashSet<>(q.getOptions().values()));
+                qq.setQuizAssessment(quizAssessment);
+                quizAssessment.getQuizQuestions().add(qq);
+            });
         }
 
-        if (aiResponse.getTrueFalseQuestions() != null) {
-            questions.addAll(aiResponse.getTrueFalseQuestions().stream().map(q -> {
+        if (aiResponse.getTrue_false() != null) {
+            aiResponse.getTrue_false().forEach(q -> {
                 QuizQuestions qq = new QuizQuestions();
-                qq.setQuestionText(q.getQuestionText());
-                qq.setMarks(q.getPoints());
-                // qq.setCorrectAnswer(q.getCorrectAnswer().toString());
+                qq.setQuestionText(q.getQuestion());
+                qq.setMarks(1);
+                qq.setCorrectAnswer(Boolean.toString(q.isCorrect_answer()));
                 qq.setOptions(Set.of("True", "False"));
-                qq.setQuizAssessment(quiz);
-                return qq;
-            }).collect(Collectors.toSet()));
+                qq.setQuizAssessment(quizAssessment);
+                quizAssessment.getQuizQuestions().add(qq);
+            });
         }
 
-        // Map Open-ended questions
-        if (aiResponse.getOpenEndedQuestions() != null) {
-            questions.addAll(aiResponse.getOpenEndedQuestions().stream().map(q -> {
+        if (aiResponse.getShort_answer() != null) {
+            aiResponse.getShort_answer().forEach(q -> {
                 QuizQuestions qq = new QuizQuestions();
-                qq.setQuestionText(q.getQuestionText());
-                qq.setMarks(q.getPoints());
-                // qq.setCorrectAnswer(q.getCorrectAnswer());
+                qq.setQuestionText(q.getQuestion());
+                qq.setMarks(2);
+                qq.setCorrectAnswer(String.join(", ", q.getKey_points()));
                 qq.setOptions(new HashSet<>());
-                qq.setQuizAssessment(quiz);
-                return qq;
-            }).collect(Collectors.toSet()));
+                qq.setQuizAssessment(quizAssessment);
+                quizAssessment.getQuizQuestions().add(qq);
+            });
         }
 
-        quiz.setQuizQuestions(questions);
 
-        module.getQuizAssessments().add(quiz);
+        module.addQuizAssessment(quizAssessment);
+
         courseModuleRepository.save(module);
 
-
+        log.info("Quiz mapped and saved successfully. Questions count: {}", quizAssessment.getQuizQuestions().size());
     }
+
+
     public CourseDto mapToDto(Course course) {
 
         CourseDto courseDto = new CourseDto();
@@ -147,6 +154,7 @@ public class MapperServices {
 
         return courseDto;
     }
+
     public ModuleDto mapToDtoModule(CourseModule courseModule) {
 
         List<QuizAssessmentDto> quizDto = courseModule.getQuizAssessments().stream().map(quiz -> {
@@ -160,56 +168,62 @@ public class MapperServices {
 
         return new ModuleDto(courseModule.getWeek(), courseModule.getModuleName(), courseModule.getContent(), courseModule.getModuleId(), quizDto);
     }
+
     @Transactional
-    public void mapAndSaveCat(GroqQuizResponse aiResponse, Course course) {
+    public void mapAndSaveCat(GroqQuizResponse aiResponse, Course course, CatAssessment catAssessment) {
+        log.info("AI response {}", aiResponse);
+      catAssessment.setCourse(course);
 
-        CatAssessment cat = new CatAssessment();
-        cat.setCourse(course);
+        if (catAssessment.getCatQuestions() == null) {
+            catAssessment.setCatQuestions(new HashSet<>());
+        }
 
-        Set<CatQuestions> questions = new HashSet<>();
+        catAssessment.getCatQuestions().clear();
 
-        if (aiResponse.getMcqQuestions() != null) {
-            questions.addAll(aiResponse.getMcqQuestions().stream().map(q -> {
+        if (aiResponse.getMultiple_choice() != null) {
+            aiResponse.getMultiple_choice().forEach(q -> {
                 CatQuestions qq = new CatQuestions();
-                qq.setQuestionText(q.getQuestionText());
-                qq.setMarks(q.getPoints());
-                qq.setCorrectAnswer(q.getCorrectAnswer());
+                qq.setQuestionText(q.getQuestion());
+                qq.setMarks(1);
+                qq.setCorrectAnswer(q.getCorrect_answer());
                 qq.setOptions(q.getOptions() == null ? new HashSet<>() :
-                        q.getOptions().stream().map(OptionDto::getText).collect(Collectors.toSet()));
-                qq.setCatAssessment(cat);
-                return qq;
-            }).collect(Collectors.toSet()));
+                        new HashSet<>(q.getOptions().values()));
+                qq.setCatAssessment(catAssessment);
+                catAssessment.getCatQuestions().add(qq);
+            });
         }
 
-        if (aiResponse.getTrueFalseQuestions() != null) {
-            questions.addAll(aiResponse.getTrueFalseQuestions().stream().map(q -> {
+        if (aiResponse.getTrue_false() != null) {
+            aiResponse.getTrue_false().forEach(q -> {
                 CatQuestions qq = new CatQuestions();
-                qq.setQuestionText(q.getQuestionText());
-                qq.setMarks(q.getPoints());
-                // qq.setCorrectAnswer(q.getCorrectAnswer().toString());
+                qq.setQuestionText(q.getQuestion());
+                qq.setMarks(1);
+                qq.setCorrectAnswer(Boolean.toString(q.isCorrect_answer()));
                 qq.setOptions(Set.of("True", "False"));
-                qq.setCatAssessment(cat);
-                return qq;
-            }).collect(Collectors.toSet()));
+                qq.setCatAssessment(catAssessment);
+                catAssessment.getCatQuestions().add(qq);
+            });
         }
 
-        // Map Open-ended questions
-        if (aiResponse.getOpenEndedQuestions() != null) {
-            questions.addAll(aiResponse.getOpenEndedQuestions().stream().map(q -> {
+        if (aiResponse.getShort_answer() != null) {
+            aiResponse.getShort_answer().forEach(q -> {
                 CatQuestions qq = new CatQuestions();
-                qq.setQuestionText(q.getQuestionText());
-                qq.setMarks(q.getPoints());
-                // qq.setCorrectAnswer(q.getCorrectAnswer());
+                qq.setQuestionText(q.getQuestion());
+                qq.setMarks(2);
+                qq.setCorrectAnswer(String.join(", ", q.getKey_points()));
                 qq.setOptions(new HashSet<>());
-                qq.setCatAssessment(cat);
-                return qq;
-            }).collect(Collectors.toSet()));
+                qq.setCatAssessment(catAssessment);
+                catAssessment.getCatQuestions().add(qq);
+            });
         }
 
-        cat.setCatQuestions(questions);
 
-        course.getCats().add(cat);
+        course.addCatAssessment(catAssessment);
+
         courseRepository.save(course);
-    }
 
+        log.info("Cat mapped and saved successfully. Questions count: {}", catAssessment.getCatQuestions().size());
+    }
 }
+
+

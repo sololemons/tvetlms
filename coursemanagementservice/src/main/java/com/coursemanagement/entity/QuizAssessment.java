@@ -9,6 +9,7 @@ import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -42,5 +43,5 @@ public class QuizAssessment {
     @OneToMany(mappedBy = "quizAssessment", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @Fetch(FetchMode.SUBSELECT)
     @EqualsAndHashCode.Exclude
-    private Set<QuizQuestions> quizQuestions;
+    private Set<QuizQuestions> quizQuestions = new HashSet<>();
 }

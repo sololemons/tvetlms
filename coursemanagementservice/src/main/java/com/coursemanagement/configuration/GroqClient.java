@@ -1,5 +1,7 @@
 package com.coursemanagement.configuration;
 
+import com.coursemanagement.dtos.AiCatRequest;
+import com.coursemanagement.dtos.AiQuizRequest;
 import com.coursemanagement.dtos.GroqQuizResponse;
 import com.coursemanagement.dtos.GroqResponseWrapper;
 import lombok.RequiredArgsConstructor;
@@ -24,43 +26,53 @@ public class GroqClient {
     @Value("${groq.api.key}")
     private String apiKey;
 
-    @Value("${groq.model}")
-    private String model;
+
 
     private final RestTemplate restTemplate;
-
-    public GroqQuizResponse generateQuiz(String prompt) {
+    public GroqQuizResponse generateQuiz(AiQuizRequest aiQuizRequest) {
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.setBearerAuth(apiKey);
 
-        Map<String, Object> body = Map.of(
-                "model", model,
-                "temperature", 0.2,
-                "max_tokens", 1500,
-                "messages", List.of(
-                        Map.of(
-                                "role", "user",
-                                "content", prompt
-                        )
-                )
-        );
+        HttpEntity<AiQuizRequest> request =
+                new HttpEntity<>(aiQuizRequest, headers);
 
-        HttpEntity<Map<String, Object>> request =
-                new HttpEntity<>(body, headers);
-
-        ResponseEntity<GroqResponseWrapper> response =
+        ResponseEntity<GroqQuizResponse> response =
                 restTemplate.postForEntity(
                         groqUrl,
                         request,
-                        GroqResponseWrapper.class
+                        GroqQuizResponse.class
                 );
 
-        if (response.getBody() == null || response.getBody().getChoices().isEmpty()) {
-            throw new RuntimeException("Groq returned empty response");
+        if (response.getBody() == null) {
+            throw new RuntimeException("AI service returned empty response");
         }
 
-        return response.getBody().extractQuiz();
+        return response.getBody();
     }
+    public GroqQuizResponse generateCat(AiCatRequest aiCatRequest) {
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBearerAuth(apiKey);
+
+        HttpEntity<AiCatRequest> request =
+                new HttpEntity<>(aiCatRequest, headers);
+
+        ResponseEntity<GroqQuizResponse> response =
+                restTemplate.postForEntity(
+                        groqUrl,
+                        request,
+                        GroqQuizResponse.class
+                );
+
+        if (response.getBody() == null) {
+            throw new RuntimeException("AI service returned empty response");
+        }
+
+        return response.getBody();
+    }
+
+
 }

@@ -47,4 +47,10 @@ public class Course {
     @CollectionTable(name = "course_assigned_names", joinColumns = @JoinColumn(name = "course_id"))
     @Column(name = "course_name")
     private Set<String> assignedCourseNames = new HashSet<>();
+
+    public void addCatAssessment(CatAssessment qa) {
+        cats.add(qa);
+        qa.setCourse(this);
+    }
+
 }

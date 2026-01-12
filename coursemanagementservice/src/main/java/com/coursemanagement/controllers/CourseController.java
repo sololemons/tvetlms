@@ -3,6 +3,8 @@ package com.coursemanagement.controllers;
 import com.coursemanagement.dtos.*;
 import com.shared.dtos.ModuleDto;
 import com.coursemanagement.services.CourseService;
+import com.shared.dtos.QuizAssessmentDto;
+import com.shared.dtos.QuizAssessmentResponseDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,8 +38,8 @@ public class CourseController {
         return ResponseEntity.ok(courseService.generateQuiz(quizGenerationRequest));
     }
     @PostMapping("/add/cat/assessment")
-    public ResponseEntity<String> generateCatAssessment(@RequestBody QuizGenerationRequest quizGenerationRequest){
-        return ResponseEntity.ok(courseService.generateCatAssessment(quizGenerationRequest));
+    public ResponseEntity<String> generateCatAssessment(@RequestBody CatGenerationRequest catGenerationRequest){
+        return ResponseEntity.ok(courseService.generateCatAssessment(catGenerationRequest));
     }
     @PostMapping("/create/course")
     public ResponseEntity<String> createCourse(@RequestBody CourseDto courseDto){
@@ -67,5 +69,16 @@ public class CourseController {
     public ResponseEntity<CourseDto> getActiveCourse(@PathVariable Integer courseId){
         return ResponseEntity.ok(courseService.getActiveCourses(courseId));
     }
+    @PostMapping("/mark/module/active")
+    public ResponseEntity<String> activateModule(@RequestBody ActivateModuleDto activateModuleDto){
+        return ResponseEntity.ok(courseService.activateModule(activateModuleDto));
+    }
+    @GetMapping("/get/quizAssessment")
+    public ResponseEntity<QuizAssessmentResponseDto> getQuizAssessment
+            (@RequestParam Integer courseId, @RequestParam Integer moduleId, @RequestParam Integer quizId)
+    {
+        return ResponseEntity.ok(courseService.getQuizAssessmentDto(courseId,moduleId,quizId));
+    }
+
 
 }

@@ -4,13 +4,11 @@ import com.coursemanagement.configuration.GroqClient;
 import com.coursemanagement.configuration.RabbitMQConfiguration;
 import com.coursemanagement.dtos.*;
 import com.coursemanagement.entity.*;
-import com.coursemanagement.repository.AssignmentRepository;
-import com.coursemanagement.repository.CourseModuleRepository;
-import com.coursemanagement.repository.CourseRepository;
+import com.coursemanagement.repository.*;
 import com.coursemanagement.utility.MapperServices;
-import com.shared.dtos.AssignCourseDto;
-import com.shared.dtos.ModuleDto;
+import com.shared.dtos.*;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,6 +20,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class CourseService {
@@ -30,7 +29,10 @@ public class CourseService {
     private final CourseModuleRepository courseModuleRepository;
     private final AssignmentRepository assignmentRepository;
     private final GroqClient groqClient;
-   private final MapperServices mapperServices;
+    private final MapperServices mapperServices;
+    private final CatAssessmentRepository catAssessmentRepository;
+    private final QuizAssessmentRepository quizAssessmentRepository;
+
     public String createCourse(CourseDto courseDto) {
         Course course = new Course();
         course.setCourseName(courseDto.getCourseName());
@@ -44,6 +46,7 @@ public class CourseService {
         return "Course" + course.getCourseName() + "Created Successfully";
 
     }
+
     public String createModule(CreateModuleDto createModuleDto) {
         Course course = courseRepository.findById(createModuleDto.getCourseId())
                 .orElseThrow(() -> new RuntimeException("Course not found with ID " + createModuleDto.getCourseId()));
@@ -55,7 +58,7 @@ public class CourseService {
         courseModule.setCourse(course);
 
         courseModuleRepository.save(courseModule);
-        return "Module" + courseModule.getModuleName() + "Created Successfully In Course with Id" +createModuleDto.
+        return "Module" + courseModule.getModuleName() + "Created Successfully In Course with Id" + createModuleDto.
                 getCourseId();
 
     }
@@ -63,7 +66,7 @@ public class CourseService {
     @Transactional(readOnly = true)
     public List<CourseDto> getAllCourses() {
         List<Course> courses = courseRepository.findAllWithAssociations();
-      return   courses.stream()
+        return courses.stream()
                 .map(mapperServices::mapToDto)
                 .toList();
 
@@ -119,43 +122,43 @@ public class CourseService {
                     map
                             (dto -> {
 
-                CourseModule module = new CourseModule();
-                module.setWeek(dto.getWeek());
-                module.setModuleName(dto.getModuleName());
-                module.setContent(dto.getContent());
-                module.setCourse(course);
+                                CourseModule module = new CourseModule();
+                                module.setWeek(dto.getWeek());
+                                module.setModuleName(dto.getModuleName());
+                                module.setContent(dto.getContent());
+                                module.setCourse(course);
 
-                if (dto.getQuizAssessmentDto() != null) {
+                                if (dto.getQuizAssessmentDto() != null) {
 
-                    Set<QuizAssessment> quizAssessments = dto.getQuizAssessmentDto().
-                            stream().
-                            map(quizDto -> {
+                                    Set<QuizAssessment> quizAssessments = dto.getQuizAssessmentDto().
+                                            stream().
+                                            map(quizDto -> {
 
-                        QuizAssessment quizAssessment = new QuizAssessment();
-                        quizAssessment.setTitle(quizDto.getTitle());
-                        quizAssessment.setModule(module);
+                                                QuizAssessment quizAssessment = new QuizAssessment();
+                                                quizAssessment.setTitle(quizDto.getTitle());
+                                                quizAssessment.setModule(module);
 
-                        if (quizDto.getQuestions() != null) {
-                            Set<QuizQuestions> quizQuestions = quizDto.getQuestions().stream().map(qDto -> {
-                                QuizQuestions qq = new QuizQuestions();
-                                qq.setQuestionText(qDto.getText());
-                                qq.setOptions(qDto.getOptions());
-                                qq.setMarks(qDto.getMarks());
-                                qq.setQuizAssessment(quizAssessment);
-                                return qq;
+                                                if (quizDto.getQuestions() != null) {
+                                                    Set<QuizQuestions> quizQuestions = quizDto.getQuestions().stream().map(qDto -> {
+                                                        QuizQuestions qq = new QuizQuestions();
+                                                        qq.setQuestionText(qDto.getText());
+                                                        qq.setOptions(qDto.getOptions());
+                                                        qq.setMarks(qDto.getMarks());
+                                                        qq.setQuizAssessment(quizAssessment);
+                                                        return qq;
+                                                    }).collect(Collectors.toSet());
+
+                                                    quizAssessment.setQuizQuestions(quizQuestions);
+                                                }
+
+                                                return quizAssessment;
+                                            }).collect(Collectors.toSet());
+
+                                    module.setQuizAssessments(quizAssessments);
+                                }
+
+                                return module;
                             }).collect(Collectors.toSet());
-
-                            quizAssessment.setQuizQuestions(quizQuestions);
-                        }
-
-                        return quizAssessment;
-                    }).collect(Collectors.toSet());
-
-                    module.setQuizAssessments(quizAssessments);
-                }
-
-                return module;
-            }).collect(Collectors.toSet());
 
             course.setModules(modules);
         }
@@ -174,13 +177,10 @@ public class CourseService {
     }
 
 
-
-
-
     public String updateCourseInfo(UpdateCourseDto updateCourseDto) {
         Optional<Course> courseInfo = courseRepository.findById(updateCourseDto.getCourseId());
 
-        if (courseInfo.isPresent()){
+        if (courseInfo.isPresent()) {
             Course course = courseInfo.get();
             course.setCourseName(updateCourseDto.getCourseName());
             course.setDescription(updateCourseDto.getDescription());
@@ -191,45 +191,36 @@ public class CourseService {
 
     }
 
+    @Transactional
     public String generateQuiz(QuizGenerationRequest quizGenerationRequest) {
 
-        CourseModule module = courseModuleRepository.findByCourse_CourseIdAndModuleId(quizGenerationRequest.getCourseId(),quizGenerationRequest.getModuleId())
+        CourseModule module = courseModuleRepository
+                .findByCourse_CourseIdAndModuleId(
+                        quizGenerationRequest.getCourseId(),
+                        quizGenerationRequest.getModuleId()
+                )
                 .orElseThrow(() -> new IllegalArgumentException("Module not found"));
-
-        String prompt = buildPrompt(
-                module,
-                quizGenerationRequest.getNoOfQuestions(),
-                quizGenerationRequest.getDifficulty()
+        QuizAssessment quizAssessment = quizAssessmentRepository.
+                findById(quizGenerationRequest.getQuizId()).orElseThrow(() -> new RuntimeException("Quiz Not Found"));
+        AiQuizRequest aiQuizRequest = new AiQuizRequest(
+                module.getContent(),
+                quizGenerationRequest.getDifficulty(),
+                quizGenerationRequest.getNoOfCloseEndedQuestions(),
+                quizGenerationRequest.getNoOfTrueFalseQuestions(),
+                quizGenerationRequest.getNoOfOpenEndedQuestions(),
+                quizGenerationRequest.getNoOfOptions()
         );
+        log.info("AI request {}", aiQuizRequest);
+        GroqQuizResponse aiResponse = groqClient.generateQuiz(aiQuizRequest);
+        log.info("AI response {}", aiResponse);
 
-        GroqQuizResponse aiResponse = groqClient.generateQuiz(prompt);
+        mapperServices.mapAndSaveQuiz(aiResponse, module, quizAssessment);
 
-        mapperServices.mapAndSaveQuiz(aiResponse, module);
         return "Quiz Generated Successfully";
     }
 
-    private String buildPrompt(CourseModule module, int numberOfQuestions, String difficulty) {
-
-        return """
-    You are an AI quiz generator for a TVET LMS.
-
-    Generate %d multiple-choice questions.
-
-    Difficulty: %s
-
-    Rules:
-    - 4 options per question
-    - Include correctAnswer
-    - Include marks
-    - Output JSON only
-
-    Module content:
-    %s
-    """.formatted(numberOfQuestions, difficulty, module.getContent());
-    }
-
     @RabbitListener(queues = RabbitMQConfiguration.ASSIGN_COURSES)
-    private void assignClassNamesToCourses(AssignCourseDto assignCourseDto){
+    private void assignClassNamesToCourses(AssignCourseDto assignCourseDto) {
         Course course = courseRepository.findById(assignCourseDto.getCourseId())
                 .orElseThrow(() -> new RuntimeException("Course not found with ID " + assignCourseDto.getCourseId()));
 
@@ -238,24 +229,34 @@ public class CourseService {
         courseRepository.save(course);
 
     }
+    @Transactional
+    public String generateCatAssessment(CatGenerationRequest catGenerationRequest) {
 
-    public String generateCatAssessment(QuizGenerationRequest quizGenerationRequest) {
-
-        CourseModule module = courseModuleRepository.findByCourse_CourseIdAndModuleIdAndStatus(quizGenerationRequest.getCourseId(),quizGenerationRequest.getModuleId(),ModuleStatus.ACTIVE)
+        CourseModule module = courseModuleRepository.
+                findByCourse_CourseIdAndStatus(catGenerationRequest.getCourseId(),ModuleStatus.ACTIVE)
                 .orElseThrow(() -> new IllegalArgumentException("Module not found"));
-        Course course = courseRepository.findByCourseId(quizGenerationRequest.getCourseId()).orElseThrow(() -> new IllegalArgumentException("Course Not found"));
-
-        String prompt = buildPrompt(
-                module,
-                quizGenerationRequest.getNoOfQuestions(),
-                quizGenerationRequest.getDifficulty()
+        Course course = courseRepository.findByCourseId(catGenerationRequest.getCourseId()).orElseThrow(() ->
+                new IllegalArgumentException("Course Not found"));
+        CatAssessment catAssessment = catAssessmentRepository.
+                findById(catGenerationRequest.getCatId()).orElseThrow(() -> new RuntimeException("Cat Not Found"));
+        AiCatRequest aiCatRequest = new AiCatRequest(
+                module.getContent(),
+                catGenerationRequest.getDifficulty(),
+                catGenerationRequest.getNoOfCloseEndedQuestions(),
+                catGenerationRequest.getNoOfTrueFalseQuestions(),
+                catGenerationRequest.getNoOfOpenEndedQuestions(),
+                catGenerationRequest.getNoOfOptions()
         );
+        log.info("AI request {}", aiCatRequest);
+        GroqQuizResponse aiResponse = groqClient.generateCat(aiCatRequest);
+        log.info("AI response {}", aiResponse);
 
-        GroqQuizResponse aiResponse = groqClient.generateQuiz(prompt);
+        mapperServices.mapAndSaveCat(aiResponse, course, catAssessment);
 
-        mapperServices.mapAndSaveCat(aiResponse, course);
         return "Quiz Generated Successfully";
+
     }
+
 
     @Transactional
     public String createCat(CreateCatDto dto) {
@@ -273,8 +274,9 @@ public class CourseService {
 
         courseRepository.save(course);
 
-        return "Cat Created For course with id "+ cat.getCourse().getCourseId();
+        return "Cat Created For course with id " + cat.getCourse().getCourseId();
     }
+
     @Transactional
     public String createQuiz(CreateQuizDto createQuizDto) {
 
@@ -298,8 +300,9 @@ public class CourseService {
 
         courseModuleRepository.save(module);
 
-        return "Quiz created successfully with course Id "+ createQuizDto.getCourseId() +"and Module Id "+ createQuizDto.getModuleId();
+        return "Quiz created successfully with course Id " + createQuizDto.getCourseId() + "and Module Id " + createQuizDto.getModuleId();
     }
+
     @Transactional
     public String createAssignment(CreateAssignmentDto dto) {
 
@@ -347,6 +350,46 @@ public class CourseService {
         return mapperServices.mapToDto(course);
     }
 
+
+    public String activateModule(ActivateModuleDto activateModuleDto) {
+        CourseModule courseModule = courseModuleRepository.
+                findByCourse_CourseIdAndModuleId
+                        (activateModuleDto.getCourseId(),activateModuleDto.getModuleId()).orElseThrow(() ->
+                        new RuntimeException("Module not found"));
+        courseModule.setStatus(ModuleStatus.ACTIVE);
+        courseModuleRepository.save(courseModule);
+        return "Module with Id" + activateModuleDto.getModuleId() +"activated Successfully";
+    }
+
+    public QuizAssessmentResponseDto getQuizAssessmentDto(
+            Integer courseId,
+            Integer moduleId,
+            Integer quizId
+    ) {
+
+        QuizAssessment quizAssessment = quizAssessmentRepository
+                .findByModule_Course_CourseIdAndModule_ModuleIdAndAssessmentId(
+                        courseId,
+                        moduleId,
+                        quizId
+                )
+                .orElseThrow(() -> new RuntimeException("Quiz assessment not found"));
+
+        return new QuizAssessmentResponseDto(
+                quizAssessment.getTitle(),
+                quizAssessment.getQuizQuestions() == null
+                        ? List.of()
+                        : quizAssessment.getQuizQuestions()
+                        .stream()
+                        .map(q -> new QuestionDto(
+                                q.getQuestionId(),
+                                q.getQuestionText(),
+                                q.getMarks(),
+                                q.getOptions()
+                        ))
+                        .toList()
+        );
+    }
 
 
 }

@@ -25,8 +25,11 @@ public class CourseModule {
     private String week;
     @Column(name = "module_name")
     private String moduleName;
-    @Column(name = "content")
+
+    @Column(name = "content", columnDefinition = "TEXT")
+    @Lob
     private String content;
+
 
     @Column(name = "status")
     private ModuleStatus status = ModuleStatus.INACTIVE;
@@ -39,4 +42,10 @@ public class CourseModule {
     @ManyToOne
     @JoinColumn(name = "course_id")
     private Course course;
+
+    public void addQuizAssessment(QuizAssessment qa) {
+        quizAssessments.add(qa);
+        qa.setModule(this);
+    }
+
 }

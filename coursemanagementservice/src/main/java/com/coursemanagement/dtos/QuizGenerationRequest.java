@@ -8,8 +8,12 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class QuizGenerationRequest {
+    private int quizId;
     private int moduleId;
     private int courseId;
     private String difficulty;
-    private int noOfQuestions;
+    private int noOfCloseEndedQuestions;
+    private int noOfTrueFalseQuestions;
+    private int noOfOpenEndedQuestions;
+    private int noOfOptions;
 }
