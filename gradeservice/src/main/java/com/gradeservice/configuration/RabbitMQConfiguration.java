@@ -15,7 +15,7 @@ public class RabbitMQConfiguration {
     public static final String GRADING_REQUEST_QUEUE = "grading_request_queue";
     public static final String GRADING_RESPONSE_QUEUE = "grading_response_queue";
     public static final String GENERATE_CERTIFICATE_QUEUE = "generate_certificate_queue";
-
+    public static final String GRADE_SUBMISSION_QUEUE ="grade_submission_queue";
 
     @Bean
     public Queue gradingRequestQueue() {
@@ -32,6 +32,12 @@ public class RabbitMQConfiguration {
     public Queue gradingResponseQueue() {
         return new Queue(GRADING_RESPONSE_QUEUE);
     }
+
+    @Bean
+    public Queue gradeSubmissionQueue() {
+        return new Queue(GRADE_SUBMISSION_QUEUE);
+    }
+
 
     @Bean
     public Jackson2JsonMessageConverter jackson2JsonMessageConverter(ObjectMapper objectMapper) {

@@ -341,7 +341,7 @@ public class StudentServices {
                 quizSubmissionDto
         );
 
-        return "CAT submitted successfully";
+        return "QUIZ submitted successfully";
 
     }
 

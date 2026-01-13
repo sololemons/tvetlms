@@ -22,6 +22,7 @@ public class RabbitMQConfiguration {
     public static final String ADD_QUIZ_SUBMISSION_QUEUE = "add_quiz_submission_queue";
     public static final String ADD_NOTIFICATIONS = "add_notifications";
     public static final String GET_NOTIFICATIONS = "get_notifications";
+    public static final String GRADE_SUBMISSION_QUEUE = "grade_submission_queue";
 
 
 
@@ -63,6 +64,10 @@ public class RabbitMQConfiguration {
     @Bean
     public Queue addNotificationQueue() {
         return new Queue(ADD_NOTIFICATIONS);
+    }
+    @Bean
+    public Queue gradeSubmissionQueue() {
+        return new Queue(GRADE_SUBMISSION_QUEUE);
     }
 
 

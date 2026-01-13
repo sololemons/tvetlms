@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -360,7 +361,7 @@ public class CourseService {
         courseModuleRepository.save(courseModule);
         return "Module with Id" + activateModuleDto.getModuleId() +"activated Successfully";
     }
-
+    @Transactional
     public QuizAssessmentResponseDto getQuizAssessmentDto(
             Integer courseId,
             Integer moduleId,
@@ -381,15 +382,39 @@ public class CourseService {
                         ? List.of()
                         : quizAssessment.getQuizQuestions()
                         .stream()
+                        .sorted(Comparator.comparing(QuizQuestions::getQuestionId))
                         .map(q -> new QuestionDto(
                                 q.getQuestionId(),
                                 q.getQuestionText(),
                                 q.getMarks(),
-                                q.getOptions()
+                                q.getOptions(),
+                                q.getCorrectAnswer()
                         ))
                         .toList()
         );
     }
 
+    @Transactional
+    public CatAssessmentResponseDto getCatAssessment(Integer courseId, Integer catId) {
 
+        CatAssessment catAssessment = catAssessmentRepository.findByCourse_CourseIdAndCatId(courseId,catId)
+                .orElseThrow(() -> new RuntimeException("Cat Not Found"));
+
+        return new CatAssessmentResponseDto(
+                catAssessment.getTitle(),
+                catAssessment.getCatQuestions() == null
+                        ? List.of()
+                        : catAssessment.getCatQuestions()
+                        .stream()
+                        .sorted(Comparator.comparing(CatQuestions::getQuestionId))
+                        .map(q -> new QuestionDto(
+                                q.getQuestionId(),
+                                q.getQuestionText(),
+                                q.getMarks(),
+                                q.getOptions(),
+                                q.getCorrectAnswer()
+                        ))
+                        .toList()
+        );
+    }
 }

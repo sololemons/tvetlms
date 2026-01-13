@@ -380,9 +380,10 @@ public class StaffService {
                 Submission submission = new Submission();
                 submission.setStudentAdmissionId(submissionDto.getStudentAdmissionId());
                 submission.setClassName(submissionDto.getClassName());
-                submission.setSubmissionType(SubmissionType.CAT);
+                submission.setSubmissionType(SubmissionType.QUIZ);
                 submission.setTargetId((long) submissionDto.getQuizId());
                 submission.setCourseId(submissionDto.getCourseId());
+                submission.setModuleId(submissionDto.getModuleId());
                 submission.setSubmissionText(jsonAnswers);
                 submission.setSubmissionStatus(SubmissionStatus.UNGRADED);
                 submission.setSubmitted(true);
