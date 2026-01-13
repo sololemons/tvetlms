@@ -33,7 +33,7 @@ public class GradingQuizSubmissionsService {
     private final RabbitTemplate rabbitTemplate;
 
     @Transactional
-    @Scheduled(fixedRate = 30 * 60 * 1000)
+    @Scheduled(fixedRate = 10 * 60 * 1000)
     public void gradeUngradedSubmissions() {
         LocalDateTime now = LocalDateTime.now();
         log.info("GamifyScheduler executed at {}", now);

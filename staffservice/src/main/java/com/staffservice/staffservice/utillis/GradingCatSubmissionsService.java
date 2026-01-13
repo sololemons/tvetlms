@@ -31,7 +31,7 @@ public class GradingCatSubmissionsService {
     private final AiGradingClient aiGradingClient;
 
     @Transactional
-    @Scheduled(fixedRate = 80 * 60 * 1000)
+    @Scheduled(fixedRate = 10 * 60 * 1000)
     public void gradeUngradedCatSubmissions() {
 
         log.info("CAT Grading Scheduler started");
