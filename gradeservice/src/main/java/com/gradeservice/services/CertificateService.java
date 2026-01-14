@@ -37,12 +37,18 @@ public class CertificateService {
     @RabbitListener(queues = RabbitMQConfiguration.GENERATE_CERTIFICATE_QUEUE)
     public void generateCertificates(CertificateRequestDto dto) {
         try {
-            logger.info("🎓 Generating styled certificate for: " + dto.getStudentFirstName() + " " + dto.getStudentLastName());
+            logger.info("🎓 Generating certificate for: " +
+                    dto.getStudentFirstName() + " " + dto.getStudentLastName());
 
-            SignatureDto signatureDto = retrofitService.getSignature();
-            String signaturePath = signatureDto.getSignature();
+            SignatureDto vocalLearnSignature = retrofitService.getVocalLearnSignature();
+            SignatureDto institutionSignature = retrofitService.getSignature();
 
-            Path pdfPath = generatePdfFromTemplate(dto, signaturePath);
+            Path pdfPath = generatePdfFromTemplate(
+                    dto,
+                    vocalLearnSignature.getSignature(),
+                    institutionSignature.getSignature()
+            );
+
             File pdfFile = pdfPath.toFile();
 
             Certifications cert = new Certifications();
@@ -58,54 +64,69 @@ public class CertificateService {
                     pdfFile
             );
 
-            logger.info("✅ Certificate generated, signed, saved, and emailed to: " + dto.getEmail());
+            logger.info("✅ Certificate generated and emailed successfully");
 
         } catch (Exception e) {
-            logger.warning("⚠️ Failed to process certificate for: " + dto.getStudentFirstName() + " " + dto.getStudentLastName());
-            logger.warning("Reason: " + e.getMessage());
+            logger.warning("⚠️ Certificate generation failed: " + e.getMessage());
 
             try {
-                rabbitTemplate.convertAndSend(RabbitMQConfiguration.GENERATE_CERTIFICATE_QUEUE, dto);
-                logger.info("🔁 Requeued certificate generation for retry.");
-            } catch (Exception requeueEx) {
-                logger.severe("❌ Failed to requeue message: " + requeueEx.getMessage());
-                throw new AmqpRejectAndDontRequeueException("Permanent failure — message not requeued.");
+                rabbitTemplate.convertAndSend(
+                        RabbitMQConfiguration.GENERATE_CERTIFICATE_QUEUE, dto);
+            } catch (Exception ex) {
+                throw new AmqpRejectAndDontRequeueException(
+                        "Permanent failure — not requeuing");
             }
         }
     }
 
-    private Path generatePdfFromTemplate(CertificateRequestDto dto, String signaturePath) throws Exception {
-        Path pdfPath = Path.of("certificates/",
+    private Path generatePdfFromTemplate(
+            CertificateRequestDto dto,
+            String vocalLearnSignaturePath,
+            String institutionSignaturePath
+    ) throws Exception {
+
+        Path pdfPath = Path.of(
+                "certificates",
                 dto.getStudentFirstName().replaceAll(" ", "_") + "_" +
-                        dto.getCourseName().replaceAll(" ", "_") + ".pdf");
+                        dto.getCourseName().replaceAll(" ", "_") + ".pdf"
+        );
 
         Files.createDirectories(pdfPath.getParent());
 
         Context context = new Context();
-        context.setVariable("studentName", dto.getStudentFirstName() + " " + dto.getStudentLastName());
+        context.setVariable("studentName",
+                dto.getStudentFirstName() + " " + dto.getStudentLastName());
         context.setVariable("courseName", dto.getCourseName());
-        context.setVariable("completionDate", dto.getCompletionDate().format(DateTimeFormatter.ofPattern("dd MMMM yyyy")));
+        context.setVariable("completionDate",
+                dto.getCompletionDate().format(
+                        DateTimeFormatter.ofPattern("dd MMMM yyyy")));
 
-        File signatureFile = new File(signaturePath);
-        if (!signatureFile.isAbsolute()) {
-            signatureFile = new File("E:/tvetlms/adminservice/" + signaturePath);
-        }
+        context.setVariable(
+                "vocalLearnSignaturePath", toFileUri(vocalLearnSignaturePath));
+        context.setVariable(
+                "institutionSignaturePath", toFileUri(institutionSignaturePath));
 
-        String absolutePath = signatureFile.getAbsoluteFile().toURI().toString();
-        context.setVariable("signaturePath", absolutePath);
-
-        logger.info("🖋️ Using signature path: " + absolutePath);
-
-        String htmlContent = templateEngine.process("certificate-template", context);
+        String html = templateEngine.process("certificate-template", context);
 
         try (FileOutputStream os = new FileOutputStream(pdfPath.toFile())) {
             PdfRendererBuilder builder = new PdfRendererBuilder();
             builder.useFastMode();
-            builder.withHtmlContent(htmlContent, new ClassPathResource("templates/").getURL().toString());
+            builder.withHtmlContent(
+                    html,
+                    new ClassPathResource("templates/").getURL().toString()
+            );
             builder.toStream(os);
             builder.run();
         }
 
         return pdfPath;
+    }
+
+    private String toFileUri(String path) {
+        File file = new File(path);
+        if (!file.isAbsolute()) {
+            file = new File("E:/tvetlms/adminservice/" + path);
+        }
+        return file.getAbsoluteFile().toURI().toString();
     }
 }

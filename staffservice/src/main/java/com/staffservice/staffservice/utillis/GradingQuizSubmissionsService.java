@@ -5,12 +5,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.shared.dtos.*;
 import com.staffservice.security.configuration.AiGradingClient;
 import com.staffservice.staffservice.configuration.RabbitMQConfiguration;
+import com.staffservice.staffservice.dtos.AiAnswerMapping;
 import com.staffservice.staffservice.dtos.SubmissionAnswerDto;
 import com.staffservice.staffservice.entities.*;
 import com.staffservice.staffservice.repositories.SubmissionRepository;
 import com.staffservice.staffservice.retrofit.RetrofitService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -50,10 +52,19 @@ public class GradingQuizSubmissionsService {
                         new TypeReference<List<SubmissionAnswerDto>>() {}
                 );
 
-                AiGradeRequest.QuizData quizData = mapToQuizData(quizAssessmentResponse);
+                AiGradeRequest.QuizData quizData = mapToQuizData(quizAssessmentResponse,submission);
 
-                Map<String, String> studentAnswersMap = mapSubmissionToAiFormat
-                        (submissionAnswers, quizAssessmentResponse.getQuestions());
+                AiAnswerMapping mapping = mapSubmissionToAiFormat(
+                        submissionAnswers,
+                        quizAssessmentResponse.getQuestions()
+                );
+
+                Map<String, String> studentAnswersMap = mapping.getStudentAnswers();
+
+                submission.setQuestionKeyMapJson(
+                        objectMapper.writeValueAsString(mapping.getQuestionKeyMap())
+                );
+                submissionRepository.save(submission);
 
                 AiGradeRequest aiRequest = new AiGradeRequest();
                 aiRequest.setSubmissionId(String.valueOf(submission.getSubmissionId()));
@@ -70,6 +81,8 @@ public class GradingQuizSubmissionsService {
                 log.info("AI Response {}", aiResponse);
 
                 aiGradeValidator.validate(aiResponse);
+                submission.setSubmissionStatus(SubmissionStatus.WAITING);
+                submissionRepository.save(submission);
 
 
                 GradeSubmissionEvent event = toEvent(aiResponse,submission);
@@ -83,9 +96,9 @@ public class GradingQuizSubmissionsService {
             }
         }
     }
-    private AiGradeRequest.QuizData mapToQuizData(QuizAssessmentResponseDto quizAssessment) {
+    private AiGradeRequest.QuizData mapToQuizData(QuizAssessmentResponseDto quizAssessment, Submission submission) {
         AiGradeRequest.QuizData quizData = new AiGradeRequest.QuizData();
-        quizData.setQuizId("");
+        quizData.setQuizId(String.valueOf(submission.getTargetId()));
         quizData.setGeneratedAt(LocalDateTime.now());
         quizData.setDifficultyLevel("intermediate");
         quizData.setTotalQuestions(quizAssessment.getQuestions().size());
@@ -155,26 +168,37 @@ public class GradingQuizSubmissionsService {
         return "SHORT_ANSWER";
     }
 
-    private Map<String, String> mapSubmissionToAiFormat(List<SubmissionAnswerDto> submissionAnswers, List<QuestionDto> quizQuestions) {
+    private AiAnswerMapping mapSubmissionToAiFormat(
+            List<SubmissionAnswerDto> submissionAnswers,
+            List<QuestionDto> quizQuestions
+    ) {
         Map<Long, QuestionDto> questionMap = quizQuestions.stream()
                 .collect(Collectors.toMap(QuestionDto::getQuestionId, q -> q));
 
-        Map<String, String> aiAnswers = new HashMap<>();
+        Map<String, String> aiAnswers = new LinkedHashMap<>();
+        Map<String, Long> questionKeyMap = new LinkedHashMap<>();
+
         int mcqCounter = 0, tfCounter = 0, saCounter = 0;
 
         for (SubmissionAnswerDto ans : submissionAnswers) {
             QuestionDto question = questionMap.get(ans.getQuestionId());
             if (question == null) continue;
 
+            String key;
+
             switch (detectQuestionType(question)) {
-                case "MCQ" -> aiAnswers.put("mcq_" + mcqCounter++, ans.getAnswerText());
-                case "TRUE_FALSE" -> aiAnswers.put("tf_" + tfCounter++, ans.getAnswerText());
-                case "SHORT_ANSWER" -> aiAnswers.put("sa_" + saCounter++, ans.getAnswerText());
+                case "MCQ" -> key = "mcq_" + mcqCounter++;
+                case "TRUE_FALSE" -> key = "tf_" + tfCounter++;
+                default -> key = "sa_" + saCounter++;
             }
+
+            aiAnswers.put(key, ans.getAnswerText());
+            questionKeyMap.put(key, question.getQuestionId());
         }
 
-        return aiAnswers;
+        return new AiAnswerMapping(aiAnswers, questionKeyMap);
     }
+
     public GradeSubmissionEvent toEvent(AiGradeResponse aiResponse, Submission submission) {
 
     AssessmentDetails assessmentDetails = new AssessmentDetails();
@@ -195,6 +219,8 @@ public class GradingQuizSubmissionsService {
     gradeSubmissionEvent.setStudentAdmissionId(aiResponse.getStudentId());
     gradeSubmissionEvent.setTotalPoints(aiResponse.getTotalPoints());
     gradeSubmissionEvent.setTopicMastery(aiResponse.getTopicMastery());
+    gradeSubmissionEvent.setClassName(submission.getClassName());
+    gradeSubmissionEvent.setQuestionKeyMapJson(submission.getQuestionKeyMapJson());
     return gradeSubmissionEvent;
     }
     public void publishGradeEvent(GradeSubmissionEvent event) {
@@ -203,7 +229,6 @@ public class GradingQuizSubmissionsService {
                 event
         );
     }
-
 
 
 

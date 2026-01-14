@@ -113,6 +113,8 @@ public class StudentController {
     public ResponseEntity<List<NotificationDto>> getNotifications(Principal principal){
         return ResponseEntity.ok(studentServices.getNotifications(principal));
     }
+    @GetMapping("/view/graded/submissions")
+    public ResponseEntity<>
 
 
 

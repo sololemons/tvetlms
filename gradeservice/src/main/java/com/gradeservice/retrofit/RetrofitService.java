@@ -39,6 +39,24 @@ public class RetrofitService {
             throw new UserNotFoundException("API call failed due to network error");
         }
     }
+    public SignatureDto getVocalLearnSignature() {
+        Call<SignatureDto> call = apiClient.getVocalLearnSignature();
+        try {
+            Response<SignatureDto> response = call.execute();
+            if (response.isSuccessful() && response.body() != null) {
+                logger.info("Successfully fetched The vocalLearn signature. Response code: {}",
+                        response.code());
+                return response.body();
+            } else {
+                logger.error("Failed to fetch the vocallearnsignature. Response code: {}, Error: {}",
+                        response.code(), response.errorBody());
+                throw new UserNotFoundException("Failed to fetch modules. Response code: " + response.code());
+            }
+        } catch (IOException e) {
+            logger.error("API call failed due to network errors: {}", e.getMessage());
+            throw new UserNotFoundException("API call failed due to network error");
+        }
+    }
 
 
 

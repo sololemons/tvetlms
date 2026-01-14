@@ -18,7 +18,7 @@ public class Submission {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "submission_id")
     private int submissionId;
-    @Column(name = "submission_text")
+    @Column(name = "submission_text", columnDefinition = "LONGTEXT")
     private String submissionText;
     @Column(name = "submission_date")
     private String submissionDate;
@@ -42,6 +42,9 @@ public class Submission {
     private boolean isSubmitted;
     @OneToMany(mappedBy = "submission", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<SubmissionFile> files;
+    @Column(name = "question_key_map", columnDefinition = "LONGTEXT")
+    private String questionKeyMapJson;
+
 
 
 }

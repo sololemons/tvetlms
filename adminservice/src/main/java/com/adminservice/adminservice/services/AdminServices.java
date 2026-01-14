@@ -6,8 +6,10 @@ import com.adminservice.adminservice.dtos.InstitutionDto;
 import com.adminservice.adminservice.dtos.Role;
 import com.adminservice.adminservice.entities.Admin;
 import com.adminservice.adminservice.entities.Institution;
+import com.adminservice.adminservice.entities.VocalLearnSignature;
 import com.adminservice.adminservice.repositories.AdminRepository;
 import com.adminservice.adminservice.repositories.InstitutionRepository;
+import com.adminservice.adminservice.repositories.VocalLearnRepository;
 import com.shared.dtos.SignatureDto;
 import com.shared.dtos.StaffPayload;
 import com.shared.dtos.StudentDto;
@@ -32,7 +34,7 @@ public class AdminServices {
     private final PasswordEncoder passwordEncoder;
     private final RabbitTemplate rabbitTemplate;
     private final InstitutionRepository institutionRepository;
-
+    private final VocalLearnRepository vocalLearnRepository;
 
 
     public void addStudent(StudentDto studentDto) {
@@ -85,10 +87,49 @@ public class AdminServices {
     }
 
     public SignatureDto getSignature() {
-        Institution institution = institutionRepository.findAll().stream().findFirst().orElse(null);
+
+        Institution institution = institutionRepository.findAll().getFirst();
+
         SignatureDto signatureDto = new SignatureDto();
+
         assert institution != null;
+
         signatureDto.setSignature(institution.getSignature());
+
         return signatureDto;
+
+    }
+    public String addSignature(MultipartFile signatureFile) {
+        try {
+            String uploadDir = "uploads/signatures/";
+
+            Files.createDirectories(Paths.get(uploadDir));
+
+            String filePath = uploadDir + signatureFile.getOriginalFilename();
+            Path path = Paths.get(filePath);
+            signatureFile.transferTo(path);
+            VocalLearnSignature vocalLearnSignature = new VocalLearnSignature();
+            vocalLearnSignature.setSignature(filePath);
+
+
+            vocalLearnRepository.save(vocalLearnSignature);
+
+            return "Vocallearn Signature added";
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to save signature ", e);
+        }
+    }
+    public SignatureDto getVocalLearnSignature() {
+
+        VocalLearnSignature vocalLearnSignature = vocalLearnRepository.findAll().getFirst();
+
+        SignatureDto signatureDto = new SignatureDto();
+
+        assert vocalLearnSignature != null;
+
+        signatureDto.setSignature(vocalLearnSignature.getSignature());
+
+        return signatureDto;
+
     }
 }

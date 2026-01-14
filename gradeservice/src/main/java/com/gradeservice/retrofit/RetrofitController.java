@@ -19,6 +19,11 @@ public class RetrofitController {
     public SignatureDto getSignature() {
         return retrofitService.getSignature();
     }
+    @GetMapping("/get/vocallearnsignature")
+    public SignatureDto getVocallearnSignature() {
+        return retrofitService.getVocalLearnSignature();
+    }
+
 
 
 

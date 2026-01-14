@@ -3,11 +3,15 @@
 <head>
     <meta charset="UTF-8" />
     <title>Certificate of Completion</title>
+
     <style>
-        @page { size: A4 landscape; margin: 1.5cm; }
+        @page {
+            size: A4 landscape;
+            margin: 1.5cm;
+        }
 
         body {
-            font-family: 'Helvetica', Arial, sans-serif;
+            font-family: Helvetica, Arial, sans-serif;
             background-color: #f8f8f8;
         }
 
@@ -17,41 +21,40 @@
             background-color: #fffef6;
             text-align: center;
             position: relative;
+            height: 100%;
         }
 
         .certificate::before {
             content: "";
             position: absolute;
-            top: 15px; left: 15px; right: 15px; bottom: 15px;
+            top: 15px;
+            left: 15px;
+            right: 15px;
+            bottom: 15px;
             border: 3px solid #d4af37;
-        }
-
-        .logo {
-            width: 120px;
-            margin-top: 10px;
         }
 
         .title {
             font-size: 36px;
-            color: #2b2b2b;
             letter-spacing: 3px;
-            margin-top: 20px;
-            font-weight: 700;
+            font-weight: bold;
+            margin-top: 40px;
+            color: #2b2b2b;
         }
 
         .subtitle {
             font-size: 18px;
+            margin-top: 10px;
             color: #555;
             font-style: italic;
-            margin-top: 10px;
         }
 
         .recipient {
             font-size: 28px;
-            color: #111;
             margin-top: 30px;
             font-weight: bold;
             text-transform: uppercase;
+            color: #111;
         }
 
         .text {
@@ -63,8 +66,8 @@
         .course-name {
             font-size: 22px;
             font-weight: bold;
-            color: #1d3557;
             margin-top: 10px;
+            color: #1d3557;
         }
 
         .date {
@@ -73,35 +76,24 @@
             color: #444;
         }
 
-        .issuer {
+        .signature-left {
             position: absolute;
             bottom: 60px;
-            left: 80px;
-            text-align: left;
+            left: 100px;
+            text-align: center;
         }
 
-        .issuer-line {
-            border-top: 2px solid #444;
-            width: 220px;
-            margin-bottom: 5px;
-        }
-
-        .issuer-text {
-            font-size: 14px;
-            color: #444;
-        }
-
-        .signature {
+        .signature-right {
             position: absolute;
             bottom: 60px;
-            right: 80px;
-            text-align: right;
+            right: 100px;
+            text-align: center;
         }
 
         .signature-line {
             border-top: 2px solid #444;
             width: 220px;
-            margin-bottom: 5px;
+            margin: 5px auto;
         }
 
         .signature-text {
@@ -110,12 +102,11 @@
         }
     </style>
 </head>
+
 <body>
 <div class="certificate">
-    <!-- Optional logo (put logo.png under resources/static/images/) -->
-    <!-- <img th:src="@{/images/logo.png}" alt="Logo" class="logo" /> -->
 
-    <div class="title">CERTIFICATE OF COMPLETION</div>
+    <div class="title">CERTIFICATE OF MERIT</div>
     <div class="subtitle">This is to certify that</div>
 
     <div class="recipient" th:text="${studentName}">Student Name</div>
@@ -123,20 +114,25 @@
     <div class="text">has successfully completed the course</div>
     <div class="course-name" th:text="${courseName}">Course Name</div>
 
-    <div class="date">Date of Completion:
-        <span th:text="${completionDate}">1 January 2025</span>
+    <div class="date">
+        Date of Completion:
+        <span th:text="${completionDate}">01 January 2026</span>
     </div>
 
-    <div class="issuer">
-        <div class="issuer-line"></div>
-        <div class="issuer-text">Authorized by Grade Service</div>
-    </div>
-
-    <div class="signature">
-        <img th:src="@{${signaturePath}}" alt="Institution Signature"
-             style="width: 150px; height: auto; margin-bottom: 5px;" />
+    <div class="signature-left">
+        <img th:src="${vocalLearnSignaturePath}"
+             alt="VocalLearn Signature"
+             style="width:150px; height:auto;" />
         <div class="signature-line"></div>
-        <div class="signature-text">Institution Signature</div>
+        <div class="signature-text">VocalLearn</div>
+    </div>
+
+    <div class="signature-right">
+        <img th:src="${institutionSignaturePath}"
+             alt="Institution Signature"
+             style="width:150px; height:auto;" />
+        <div class="signature-line"></div>
+        <div class="signature-text">Institution</div>
     </div>
 
 </div>

@@ -132,7 +132,8 @@ public class MapperServices {
                                                             q.getQuestionId(),
                                                             q.getQuestionText(),
                                                             q.getMarks(),
-                                                            q.getOptions()
+                                                            q.getOptions(),
+                                                            q.getCorrectAnswer()
                                                     )).toList();
                                             return new QuizAssessmentDto(
                                                     quiz.getTitle(),
@@ -160,7 +161,7 @@ public class MapperServices {
         List<QuizAssessmentDto> quizDto = courseModule.getQuizAssessments().stream().map(quiz -> {
             List<QuestionDto> questionDto = quiz.getQuizQuestions() == null
 
-                    ? List.of() : quiz.getQuizQuestions().stream().map(q -> new QuestionDto(q.getQuestionId(), q.getQuestionText(), q.getMarks(), q.getOptions())).toList();
+                    ? List.of() : quiz.getQuizQuestions().stream().map(q -> new QuestionDto(q.getQuestionId(), q.getQuestionText(), q.getMarks(), q.getOptions(),q.getCorrectAnswer())).toList();
 
 
             return new QuizAssessmentDto(quiz.getTitle(), questionDto);

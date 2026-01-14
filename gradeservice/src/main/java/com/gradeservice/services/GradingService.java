@@ -8,9 +8,11 @@ import com.gradeservice.repositories.GradeRepository;
 import com.shared.dtos.AiGradeResponse;
 import com.shared.dtos.AiQuestionResult;
 import com.shared.dtos.GradeSubmissionEvent;
+import com.shared.dtos.MarkSubmissionGradedDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,6 +26,7 @@ public class GradingService {
 
 
         private final GradeRepository gradeRepository;
+        private final RabbitTemplate rabbitTemplate;
 
         @Transactional
         @RabbitListener(queues = RabbitMQConfiguration.GRADE_SUBMISSION_QUEUE)
@@ -51,6 +54,10 @@ public class GradingService {
             grade.setQuestionGrades(questionGrades);
 
             gradeRepository.save(grade);
+            MarkSubmissionGradedDto markSubmissionGradedDto = new MarkSubmissionGradedDto();
+            markSubmissionGradedDto.setSubmissionId(Integer.parseInt(aiResponse.getSubmissionId()));
+             rabbitTemplate.convertAndSend(RabbitMQConfiguration.MARK_SUBMISSION_GRADED_QUEUE, markSubmissionGradedDto);
+
         }
 
         private QuestionGrade mapQuestionGrade(AiGradeResponse.QuestionResult q, SubmissionGrade grade) {

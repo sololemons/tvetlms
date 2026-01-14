@@ -1,18 +1,18 @@
-
-
-
 package com.staffservice.staffservice.utillis;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.shared.dtos.*;
 import com.staffservice.security.configuration.AiGradingClient;
+import com.staffservice.staffservice.configuration.RabbitMQConfiguration;
 import com.staffservice.staffservice.dtos.SubmissionAnswerDto;
 import com.staffservice.staffservice.entities.*;
 import com.staffservice.staffservice.repositories.SubmissionRepository;
 import com.staffservice.staffservice.retrofit.RetrofitService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,15 +24,17 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class GradingSubmissionsService {
+public class GradingQuizSubmissionsService {
 
     private final SubmissionRepository submissionRepository;
     private final AiGradingClient aiGradingClient;
     private final RetrofitService retrofitService;
     private final ObjectMapper objectMapper;
+    private final AiGradeValidator aiGradeValidator;
+    private final RabbitTemplate rabbitTemplate;
 
     @Transactional
-    @Scheduled(fixedRate = 5 * 60 * 1000)
+    @Scheduled(fixedRate = 10 * 60 * 1000)
     public void gradeUngradedSubmissions() {
         LocalDateTime now = LocalDateTime.now();
         log.info("GamifyScheduler executed at {}", now);
@@ -49,7 +51,7 @@ public class GradingSubmissionsService {
                         new TypeReference<List<SubmissionAnswerDto>>() {}
                 );
 
-                AiGradeRequest.QuizData quizData = mapToQuizData(quizAssessmentResponse);
+                AiGradeRequest.QuizData quizData = mapToQuizData(quizAssessmentResponse,submission);
 
                 Map<String, String> studentAnswersMap = mapSubmissionToAiFormat
                         (submissionAnswers, quizAssessmentResponse.getQuestions());
@@ -64,10 +66,18 @@ public class GradingSubmissionsService {
 
                 log.info("Sending grading request to AI for submission {}", submission.getSubmissionId());
 
-                // Call AI grading service
                 log.info("AI request {}" , aiRequest);
-                AiGradeResponse aiResponse = aiGradingClient.grade(aiRequest);
+                AiGradeResponse aiResponse = aiGradingClient.gradeQuiz(aiRequest);
                 log.info("AI Response {}", aiResponse);
+
+                aiGradeValidator.validate(aiResponse);
+                submission.setSubmissionStatus(SubmissionStatus.WAITING);
+                submissionRepository.save(submission);
+
+
+                GradeSubmissionEvent event = toEvent(aiResponse,submission);
+                log.info("GradeSubmissionEvent {}", event);
+                publishGradeEvent(event);
 
                 log.info("Graded submission {} successfully", submission.getSubmissionId());
 
@@ -76,9 +86,9 @@ public class GradingSubmissionsService {
             }
         }
     }
-    private AiGradeRequest.QuizData mapToQuizData(QuizAssessmentResponseDto quizAssessment) {
+    private AiGradeRequest.QuizData mapToQuizData(QuizAssessmentResponseDto quizAssessment, Submission submission) {
         AiGradeRequest.QuizData quizData = new AiGradeRequest.QuizData();
-        quizData.setQuizId(UUID.randomUUID().toString());
+        quizData.setQuizId(String.valueOf(submission.getTargetId()));
         quizData.setGeneratedAt(LocalDateTime.now());
         quizData.setDifficultyLevel("intermediate");
         quizData.setTotalQuestions(quizAssessment.getQuestions().size());
@@ -129,12 +139,23 @@ public class GradingSubmissionsService {
         return quizData;
     }
 
-    private String detectQuestionType(QuestionDto q) {
-        if (q.getOptions() != null && !q.getOptions().isEmpty()) return "MCQ";
-        else if (q.getCorrectAnswer() != null &&
-                (q.getCorrectAnswer().equalsIgnoreCase("true") || q.getCorrectAnswer().equalsIgnoreCase("false")))
+    public String detectQuestionType(QuestionDto q) {
+
+        if (q.getOptions() != null
+                && q.getOptions().size() == 2
+                && q.getOptions().stream().allMatch(
+                opt -> opt.equalsIgnoreCase("true") || opt.equalsIgnoreCase("false"))
+                && (q.getCorrectAnswer().equalsIgnoreCase("true")
+                || q.getCorrectAnswer().equalsIgnoreCase("false"))) {
+
             return "TRUE_FALSE";
-        else return "SHORT_ANSWER";
+        }
+
+        if (q.getOptions() != null && q.getOptions().size() > 2) {
+            return "MCQ";
+        }
+
+        return "SHORT_ANSWER";
     }
 
     private Map<String, String> mapSubmissionToAiFormat(List<SubmissionAnswerDto> submissionAnswers, List<QuestionDto> quizQuestions) {
@@ -145,7 +166,7 @@ public class GradingSubmissionsService {
         int mcqCounter = 0, tfCounter = 0, saCounter = 0;
 
         for (SubmissionAnswerDto ans : submissionAnswers) {
-            QuestionDto question = questionMap.get(ans.getQuestionId()); // ans.getQuestionId() should also be Long
+            QuestionDto question = questionMap.get(ans.getQuestionId());
             if (question == null) continue;
 
             switch (detectQuestionType(question)) {
@@ -157,6 +178,36 @@ public class GradingSubmissionsService {
 
         return aiAnswers;
     }
+    public GradeSubmissionEvent toEvent(AiGradeResponse aiResponse, Submission submission) {
+
+    AssessmentDetails assessmentDetails = new AssessmentDetails();
+    assessmentDetails.setAssessmentType(String.valueOf(submission.getSubmissionType()));
+    assessmentDetails.setClassName(submission.getClassName());
+    assessmentDetails.setCourseId(submission.getCourseId());
+    assessmentDetails.setModuleId(submission.getModuleId());
+    assessmentDetails.setTargetId((int) submission.getTargetId());
+
+    GradeSubmissionEvent gradeSubmissionEvent =new GradeSubmissionEvent();
+    gradeSubmissionEvent.setSubmissionId(String.valueOf(submission.getSubmissionId()));
+    gradeSubmissionEvent.setGradedAt(aiResponse.getGradedAt());
+    gradeSubmissionEvent.setMaxPoints(aiResponse.getMaxPoints());
+    gradeSubmissionEvent.setAssessmentDetails(assessmentDetails);
+    gradeSubmissionEvent.setOverallFeedback(aiResponse.getOverallFeedback());
+    gradeSubmissionEvent.setPercentage(aiResponse.getPercentage());
+    gradeSubmissionEvent.setQuestionResults(aiResponse.getQuestionResults());
+    gradeSubmissionEvent.setStudentAdmissionId(aiResponse.getStudentId());
+    gradeSubmissionEvent.setTotalPoints(aiResponse.getTotalPoints());
+    gradeSubmissionEvent.setTopicMastery(aiResponse.getTopicMastery());
+    return gradeSubmissionEvent;
+    }
+    public void publishGradeEvent(GradeSubmissionEvent event) {
+        rabbitTemplate.convertAndSend(
+                RabbitMQConfiguration.GRADE_SUBMISSION_QUEUE,
+                event
+        );
+    }
+
+
+
 
 }
-*/

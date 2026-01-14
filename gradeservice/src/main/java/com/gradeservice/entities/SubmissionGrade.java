@@ -34,6 +34,8 @@ public class SubmissionGrade {
     private double totalPoints;
     @Column(name = "max_points")
     private double maxPoints;
+    @Column(name = "class_name")
+    private String className;
     @Column(name = "percentage")
     private double percentage;
     @Column(name = "graded_at")

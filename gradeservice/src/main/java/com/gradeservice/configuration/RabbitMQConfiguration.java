@@ -16,6 +16,8 @@ public class RabbitMQConfiguration {
     public static final String GRADING_RESPONSE_QUEUE = "grading_response_queue";
     public static final String GENERATE_CERTIFICATE_QUEUE = "generate_certificate_queue";
     public static final String GRADE_SUBMISSION_QUEUE ="grade_submission_queue";
+    public static final String MARK_SUBMISSION_GRADED_QUEUE ="mark_submission_graded_queue";
+
 
     @Bean
     public Queue gradingRequestQueue() {
@@ -37,6 +39,9 @@ public class RabbitMQConfiguration {
     public Queue gradeSubmissionQueue() {
         return new Queue(GRADE_SUBMISSION_QUEUE);
     }
+    @Bean
+    public Queue markSubmissionGraded(){ return new Queue(MARK_SUBMISSION_GRADED_QUEUE);}
+
 
 
     @Bean

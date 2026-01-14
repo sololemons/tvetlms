@@ -47,5 +47,16 @@ public class AdminController {
     public ResponseEntity<SignatureDto> getSignature(){
         return ResponseEntity.ok(adminService.getSignature());
     }
+    @GetMapping("/get/vocallearnsignature")
+    public ResponseEntity<SignatureDto> getVocallearnSignature(){
+        return ResponseEntity.ok(adminService.getVocalLearnSignature());
+    }
+    @PostMapping("/add/signature")
+    public ResponseEntity<String> addVocaLearnSignature(
+            @RequestParam("signatureFile") MultipartFile signatureFile
+    ) {
+
+     return ResponseEntity.ok(adminService.addSignature(signatureFile));
+    }
 
 }
