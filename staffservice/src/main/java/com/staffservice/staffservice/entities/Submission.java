@@ -17,7 +17,7 @@ public class Submission {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "submission_id")
-    private int submissionId;
+    private Long id;
     @Column(name = "submission_text", columnDefinition = "LONGTEXT")
     private String submissionText;
     @Column(name = "submission_date")

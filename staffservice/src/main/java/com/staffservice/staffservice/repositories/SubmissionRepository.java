@@ -15,7 +15,6 @@ public interface SubmissionRepository extends JpaRepository<Submission, Long> {
 
     List<Submission> findByStudentAdmissionId(String studentAdmissionId);
 
-   // List<Submission> findByAssignmentId(Long assignmentId);
 
 
     List<Submission> findAllBySubmissionStatus(SubmissionStatus submissionStatus);
@@ -26,4 +25,8 @@ public interface SubmissionRepository extends JpaRepository<Submission, Long> {
 
 
     List<Submission> findBySubmissionStatusAndSubmissionType(SubmissionStatus submissionStatus,SubmissionType submissionType);
+
+
+
+    Optional<Submission>findByIdAndSubmissionStatus(Long submissionId, SubmissionStatus submissionStatus);
 }

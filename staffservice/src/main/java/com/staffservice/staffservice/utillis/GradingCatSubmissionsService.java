@@ -62,14 +62,14 @@ public class GradingCatSubmissionsService {
                         mapSubmissionToAiFormat(answers, catAssessment.getQuestions());
 
                 AiCatGradeRequest request = new AiCatGradeRequest();
-                request.setSubmissionId(String.valueOf(submission.getSubmissionId()));
+                request.setSubmissionId(String.valueOf(submission.getId()));
                 request.setStudentId(submission.getStudentAdmissionId());
                 request.setCatId(String.valueOf(submission.getTargetId()));
                 request.setTopic("CAT");
                 request.setCatData(catData);
                 request.setStudentAnswers(studentAnswers);
 
-                log.info("Sending CAT grading request for submission {}", submission.getSubmissionId());
+                log.info("Sending CAT grading request for submission {}", submission.getId());
 
                 AiGradeResponse response = aiGradingClient.gradeCat(request);
 
@@ -80,11 +80,11 @@ public class GradingCatSubmissionsService {
                 GradeSubmissionEvent event = gradingQuizSubmissionsService.toEvent(response, submission);
                 gradingQuizSubmissionsService.publishGradeEvent(event);
 
-                log.info("CAT submission {} graded successfully", submission.getSubmissionId());
+                log.info("CAT submission {} graded successfully", submission.getId());
 
             } catch (Exception e) {
                 log.error("CAT grading failed for submission {}",
-                        submission.getSubmissionId(), e);
+                        submission.getId(), e);
             }
         }
     }

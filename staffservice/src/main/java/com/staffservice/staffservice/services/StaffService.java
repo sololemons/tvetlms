@@ -1,7 +1,9 @@
 package com.staffservice.staffservice.services;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.shared.dtos.*;
-import com.staffservice.staffservice.exceptions.MissingFieldException;
 import com.staffservice.staffservice.repositories.*;
+import com.staffservice.staffservice.retrofit.RetrofitService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -12,8 +14,6 @@ import com.staffservice.staffservice.entities.*;
 import com.staffservice.staffservice.entities.Class;
 import com.staffservice.staffservice.exceptions.UserNotFoundException;
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.data.domain.Page;
@@ -23,25 +23,23 @@ import org.springframework.stereotype.Service;
 
 import java.security.Principal;
 import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class StaffService {
     private final StaffRepository staffRepository;
     private final ObjectMapper objectMapper;
     private final RabbitTemplate rabbitTemplate;
 
-    private final Logger log = LoggerFactory.getLogger(StaffService.class);
     private final AssignmentRepository assignmentRepository;
     private final ClassRepository classRepository;
     private final SubmissionRepository submissionRepository;
     private final SubmissionFileRepository submissionFileRepository;
+    private final RetrofitService retrofitService;
 
 
     public List<StaffDto> getAllStaffMembers() {
@@ -160,7 +158,8 @@ public class StaffService {
                 })
                 .collect(Collectors.toList());
     }
-  @Transactional(readOnly = true)
+
+    @Transactional(readOnly = true)
     public List<AssignmentDto> getAllAssignments(String className) {
         List<Assignments> assignments = assignmentRepository.findByClasses_ClassName(className);
         return assignments.stream()
@@ -208,6 +207,7 @@ public class StaffService {
         return submissionRepository.findByStudentAdmissionId(studentAdmissionId).stream().map(this::mapToDto).toList();
 
     }
+
     @Transactional(readOnly = true)
     public List<AssignmentDto> getAssignmentsByStaffId(Long staffId) {
 
@@ -225,11 +225,12 @@ public class StaffService {
 
         return mapToDto(staff);
     }
-/*
-   public List<SubmissionDto> getSubmissionsByAssignmentId(Long assignmentId) {
-        return submissionRepository.findByAssignmentId(assignmentId).stream().map(this::mapToDto).toList();
-    }
-*/
+
+    /*
+       public List<SubmissionDto> getSubmissionsByAssignmentId(Long assignmentId) {
+            return submissionRepository.findByAssignmentId(assignmentId).stream().map(this::mapToDto).toList();
+        }
+    */
     public List<SubmissionDto> getAllUngradedSubmissions() {
         return submissionRepository.findAllBySubmissionStatus(SubmissionStatus.UNGRADED).stream().map(this::mapToDto).toList();
     }
@@ -241,8 +242,8 @@ public class StaffService {
 
     private SubmissionDto mapToDto(Submission sub) {
         SubmissionDto dto = new SubmissionDto();
-        dto.setSubmissionId((long) sub.getSubmissionId());
-     //   dto.setAssignmentId(sub.getAssignmentId());
+        dto.setSubmissionId((long) sub.getId());
+        //   dto.setAssignmentId(sub.getAssignmentId());
         dto.setClassName(sub.getClassName());
         dto.setStudentAdmissionId(sub.getStudentAdmissionId());
         dto.setSubmissionDate(LocalDateTime.parse(sub.getSubmissionDate()));
@@ -275,11 +276,12 @@ public class StaffService {
         return "Classnames assigned successfully:" + assignCourseDto.getClassName();
 
     }
+
     @RabbitListener(queues = RabbitMQConfiguration.ADD_ASSIGNMENT_QUEUE)
     @Transactional
     public void consumeAssignmentSubmission(AssignmentSubmissionDto event) {
 
-        log.info("Received Submission {}" ,event);
+        log.info("Received Submission {}", event);
 
         Submission submission = new Submission();
         submission.setStudentAdmissionId(event.getStudentAdmissionId());
@@ -291,7 +293,7 @@ public class StaffService {
         submission.setSubmissionStatus(SubmissionStatus.UNGRADED);
         submission.setSubmitted(true);
 
-        log.info("Assignment submission created successfully of Id : {}",submission.getSubmissionId());
+        log.info("Assignment submission created successfully of Id : {}", submission.getId());
 
         Submission saved = submissionRepository.save(submission);
 
@@ -305,6 +307,7 @@ public class StaffService {
 
         submissionFileRepository.save(file);
     }
+
     @RabbitListener(queues = RabbitMQConfiguration.ADD_CAT_SUBMISSION_QUEUE)
     public void addCatSubmission(CatSubmissionDto submissionDto) {
 
@@ -344,7 +347,7 @@ public class StaffService {
                 submissionRepository.save(submission);
 
                 log.info("CAT submission saved: {} from course with id {} and Cat Id {} ", submission,
-                        submissionDto.getCourseId(),submissionDto.getCatId());
+                        submissionDto.getCourseId(), submissionDto.getCatId());
             }
 
         } catch (Exception e) {
@@ -352,6 +355,7 @@ public class StaffService {
             throw new RuntimeException("Failed to save CAT submission", e);
         }
     }
+
     @RabbitListener(queues = RabbitMQConfiguration.ADD_QUIZ_SUBMISSION_QUEUE)
     public void addQuizSubmission(QuizSubmissionDto submissionDto) {
 
@@ -391,7 +395,7 @@ public class StaffService {
 
                 submissionRepository.save(submission);
 
-                log.info("Quiz submission saved: {} for Course with id: {} and module Id: {} ", submission, submissionDto.getCourseId(),submissionDto.getModuleId());
+                log.info("Quiz submission saved: {} for Course with id: {} and module Id: {} ", submission, submissionDto.getCourseId(), submissionDto.getModuleId());
             }
 
         } catch (Exception e) {
@@ -404,11 +408,214 @@ public class StaffService {
     public String createNotification(NotificationRequestDto notificationRequestDto) {
         if (notificationRequestDto != null) {
             notificationRequestDto.setDate(LocalDateTime.now());
-            rabbitTemplate.convertAndSend(RabbitMQConfiguration.ADD_NOTIFICATIONS,notificationRequestDto);
+            rabbitTemplate.convertAndSend(RabbitMQConfiguration.ADD_NOTIFICATIONS, notificationRequestDto);
         }
         return "Notification Sent From Staff Service";
     }
 
 
+    public SubmissionUngradedViewDto getUngradedAssessmentByStudent(Long submissionId) {
+
+        Submission submission = submissionRepository.findById(submissionId)
+                .orElseThrow(() -> new RuntimeException("Submission not found"));
+
+        // 1️⃣ Parse student answers
+        List<SubmissionAnswerDto> studentAnswers =
+                parseSubmissionAnswers(submission.getSubmissionText());
+
+        Map<Integer, String> studentAnswerMap =
+                studentAnswers.stream()
+                        .collect(Collectors.toMap(
+                                SubmissionAnswerDto::getQuestionId,
+                                SubmissionAnswerDto::getAnswerText
+                        ));
+
+        // 2️⃣ Fetch assessment (QUIZ or CAT)
+        AssessmentResponse assessment = switch (submission.getSubmissionType()) {
+
+            case QUIZ -> retrofitService.getQuizAssessment(
+                    submission.getCourseId(),
+                    submission.getModuleId(),
+                    (int) submission.getTargetId()
+            );
+
+            case CAT -> retrofitService.getCatAssessment(
+                    submission.getCourseId(),
+                    (int) submission.getTargetId()
+            );
+
+            default -> throw new IllegalStateException(
+                    "Unsupported submission type: " + submission.getSubmissionType()
+            );
+        };
+
+        // 3️⃣ Merge questions + student answers
+        List<SubmissionUngradedQuizQuestionViewDto> merged =
+                assessment.getQuestions().stream()
+                        .map(q -> new SubmissionUngradedQuizQuestionViewDto(
+                                q.getQuestionId(),
+                                q.getText(),
+                                q.getOptions(),
+                                studentAnswerMap.get(q.getQuestionId()),
+                                q.getCorrectAnswer(),
+                                q.getMarks()
+                        ))
+                        .toList();
+
+        // 4️⃣ Final response
+        return new SubmissionUngradedViewDto(
+                submission.getId(),
+                submission.getStudentAdmissionId(),
+                submission.getTargetId(),
+                assessment.getTitle(),
+                merged
+        );
+    }
+
+    private List<SubmissionAnswerDto> parseSubmissionAnswers(String json) {
+        try {
+            return objectMapper.readValue(
+                    json,
+                    new TypeReference<List<SubmissionAnswerDto>>() {
+                    }
+            );
+        } catch (Exception e) {
+            throw new RuntimeException("Invalid submission JSON", e);
+        }
+    }
+
+    @Transactional
+    public SubmissionViewDto getGradedAssessmentByStudent(Long submissionId) {
+
+        Submission submission = submissionRepository
+                .findByIdAndSubmissionStatus(submissionId, SubmissionStatus.GRADED)
+                .orElseThrow(() -> new RuntimeException("Submission not found"));
+        log.info("Submission /n {}", submission);
+
+        List<SubmissionAnswerDto> studentAnswers =
+                parseSubmissionAnswers(submission.getSubmissionText());
+        log.info("student answers {}",studentAnswers);
+
+
+
+        // 2️⃣ Parse questionKeyMapJson
+        Map<String, Integer> keyToQuestionIdMap;
+        try {
+            keyToQuestionIdMap = objectMapper.readValue(
+                    submission.getQuestionKeyMapJson(),
+                    new TypeReference<Map<String, Integer>>() {}
+            );
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Failed to parse questionKeyMapJson", e);
+        }
+        log.info("keyToQuestionIdMap {}",keyToQuestionIdMap);
+
+
+        // 3️⃣ Invert map: questionId -> key
+        Map<Integer, String> questionIdToKeyMap =
+                keyToQuestionIdMap.entrySet().stream()
+                        .collect(Collectors.toMap(
+                                Map.Entry::getValue,
+                                Map.Entry::getKey
+                        ));
+        log.info("questionIdToKeyMap {}",questionIdToKeyMap);
+
+        Map<String, String> studentAnswerMap = studentAnswers.stream()
+                .collect(Collectors.toMap(
+                        a -> {
+                            String key = questionIdToKeyMap.get(a.getQuestionId());
+                            if (key == null) {
+                                throw new IllegalStateException(
+                                        "No question key for questionId=" + a.getQuestionId()
+                                );
+                            }
+                            return key;
+                        },
+                        SubmissionAnswerDto::getAnswerText
+                ));
+
+        log.info("studentAnswerMap {}",studentAnswerMap);
+
+        // 5️⃣ Fetch assessment
+        AssessmentResponse assessment = switch (submission.getSubmissionType()) {
+            case QUIZ -> retrofitService.getQuizAssessment(
+                    submission.getCourseId(),
+                    submission.getModuleId(),
+                    (int) submission.getTargetId()
+            );
+            case CAT -> retrofitService.getCatAssessment(
+                    submission.getCourseId(),
+                    (int) submission.getTargetId()
+            );
+            default -> throw new IllegalStateException(
+                    "Unsupported submission type: " + submission.getSubmissionType()
+            );
+        };
+
+        // 6️⃣ Fetch grades
+        SubmissionGradeDto submissionGradeDto =
+                retrofitService.getSubmissionGradesBySubmissionId(submission.getId());
+
+        Map<String, QuestionGradeDto> gradeMap =
+                submissionGradeDto.getQuestionGrades().stream()
+                        .collect(Collectors.toMap(
+                                QuestionGradeDto::getQuestionId,
+                                g -> g
+                        ));
+
+        // 7️⃣ Merge everything
+        List<SubmissionQuizQuestionViewDto> merged =
+                assessment.getQuestions().stream()
+                        .map(q -> {
+                            String qKey = questionIdToKeyMap.get(q.getQuestionId());
+                            QuestionGradeDto grade = qKey != null ? gradeMap.get(qKey) : null;
+
+                            return new SubmissionQuizQuestionViewDto(
+                                    q.getQuestionId(),
+                                    q.getText(),
+                                    q.getOptions(),
+                                    qKey != null ? studentAnswerMap.getOrDefault(qKey, "") : "",
+                                    q.getCorrectAnswer(),
+                                    grade != null ? grade.getAwardedPoints() : 0,
+                                    grade != null ? grade.getMaxPoints() : q.getMarks(),
+                                    grade != null ? grade.getFeedback() : ""
+                            );
+                        })
+                        .toList();
+
+        // 8️⃣ Totals
+        double totalAwardedPoints = merged.stream()
+                .mapToDouble(SubmissionQuizQuestionViewDto::getAwardedMarks)
+                .sum();
+
+        double totalMaxPoints = merged.stream()
+                .mapToDouble(SubmissionQuizQuestionViewDto::getMaxMarks)
+                .sum();
+
+        return new SubmissionViewDto(
+                submission.getId(),
+                submission.getStudentAdmissionId(),
+                submission.getTargetId(),
+                assessment.getTitle(),
+                totalAwardedPoints,
+                totalMaxPoints,
+                merged
+        );
+    }
+
+
+    private List<SubmissionAnswerDtos> parseSubmissionAnswer(String json) {
+        try {
+            return objectMapper.readValue(
+                    json,
+                    new TypeReference<List<SubmissionAnswerDtos>>() {
+                    }
+            );
+        } catch (Exception e) {
+            throw new RuntimeException("Invalid submission JSON", e);
+        }
+    }
 }
+
+
 

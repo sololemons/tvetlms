@@ -17,6 +17,7 @@ public class SubmissionGrade {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
     private Long id;
     @Column(name = "submission_Id")
     private String submissionId;

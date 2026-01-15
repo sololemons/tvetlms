@@ -7,7 +7,10 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class SubmissionAnswerDto {
-    private Integer questionId;
-    private String answerText;
+public class SubmissionFileDto {
+
+    private Long fileId;
+    private String fileName;
+    private String fileType;
+    private String fileUrl;
 }

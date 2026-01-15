@@ -32,4 +32,10 @@ public class SubmissionGradeSpecification {
                         ? null
                         : cb.equal(root.get("className"), className);
     }
+    public static Specification<SubmissionGrade> hasSubmissionId(String submissionId) {
+        return (root, query, cb) ->
+                (submissionId == null || submissionId.isBlank())
+                        ? null
+                        : cb.equal(root.get("submissionId"), submissionId);
+    }
 }

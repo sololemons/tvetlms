@@ -12,7 +12,6 @@ import com.staffservice.staffservice.repositories.SubmissionRepository;
 import com.staffservice.staffservice.retrofit.RetrofitService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -67,14 +66,14 @@ public class GradingQuizSubmissionsService {
                 submissionRepository.save(submission);
 
                 AiGradeRequest aiRequest = new AiGradeRequest();
-                aiRequest.setSubmissionId(String.valueOf(submission.getSubmissionId()));
+                aiRequest.setSubmissionId(String.valueOf(submission.getId()));
                 aiRequest.setStudentId(submission.getStudentAdmissionId());
                 aiRequest.setQuizId(String.valueOf(submission.getTargetId()));
                 aiRequest.setTopic("AI");
                 aiRequest.setQuizData(quizData);
                 aiRequest.setStudentAnswers(studentAnswersMap);
 
-                log.info("Sending grading request to AI for submission {}", submission.getSubmissionId());
+                log.info("Sending grading request to AI for submission {}", submission.getId());
 
                 log.info("AI request {}" , aiRequest);
                 AiGradeResponse aiResponse = aiGradingClient.gradeQuiz(aiRequest);
@@ -89,10 +88,10 @@ public class GradingQuizSubmissionsService {
                 log.info("GradeSubmissionEvent {}", event);
                 publishGradeEvent(event);
 
-                log.info("Graded submission {} successfully", submission.getSubmissionId());
+                log.info("Graded submission {} successfully", submission.getId());
 
             } catch (Exception e) {
-                log.error("Failed to grade submission {}: {}", submission.getSubmissionId(), e.getMessage(), e);
+                log.error("Failed to grade submission {}: {}", submission.getId(), e.getMessage(), e);
             }
         }
     }
@@ -209,7 +208,7 @@ public class GradingQuizSubmissionsService {
     assessmentDetails.setTargetId((int) submission.getTargetId());
 
     GradeSubmissionEvent gradeSubmissionEvent =new GradeSubmissionEvent();
-    gradeSubmissionEvent.setSubmissionId(String.valueOf(submission.getSubmissionId()));
+    gradeSubmissionEvent.setSubmissionId(String.valueOf(submission.getId()));
     gradeSubmissionEvent.setGradedAt(aiResponse.getGradedAt());
     gradeSubmissionEvent.setMaxPoints(aiResponse.getMaxPoints());
     gradeSubmissionEvent.setAssessmentDetails(assessmentDetails);

@@ -1,5 +1,6 @@
 package com.staffservice.staffservice.controllers;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.shared.dtos.AssignCourseDto;
 import com.shared.dtos.NotificationRequestDto;
 import com.shared.dtos.SubmissionDto;
@@ -101,6 +102,24 @@ public class StaffController {
     @PostMapping("/create/notification")
     public ResponseEntity<String> createNotification(@RequestBody NotificationRequestDto notificationRequestDto){
         return ResponseEntity.ok(staffServices.createNotification(notificationRequestDto));
+    }
+
+  /*
+    @PostMapping("/view/submissions/filters")
+    public ResponseEntity<List<SubmissionViewDto>> getSubmissionsByFilters(
+            @RequestParam String courseId,
+            @RequestParam String targetId
+    ){
+        return ResponseEntity.ok(staffServices.getSubmissionsByFilters(courseId,targetId));
+    }
+*/
+    @GetMapping("/view/submission/ungraded")
+    public ResponseEntity<SubmissionUngradedViewDto>getUngradedSubmissions(@RequestParam Long submissionId){
+        return ResponseEntity.ok(staffServices.getUngradedAssessmentByStudent(submissionId));
+    }
+    @GetMapping("/get/graded/submissions")
+    public ResponseEntity<SubmissionViewDto> getGradedSubmissions(@RequestParam Long submissionId)  {
+        return ResponseEntity.ok(staffServices.getGradedAssessmentByStudent(submissionId));
     }
 
 

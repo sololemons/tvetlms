@@ -211,3 +211,167 @@ public class GradingQuizSubmissionsService {
 
 
 }
+
+
+
+
+
+ public SubmissionViewDto getUngradedQuizByStudent(Long submissionId) {
+
+        Submission submission = submissionRepository.findById(submissionId)
+                .orElseThrow(() -> new RuntimeException("Submission not found"));
+
+        // 1️⃣ Parse student answers
+        List<SubmissionAnswerDto> studentAnswers =
+                parseSubmissionAnswers(submission.getSubmissionText());
+
+        Map<Long, String> studentAnswerMap =
+                studentAnswers.stream()
+                        .collect(Collectors.toMap(
+                                SubmissionAnswerDto::getQuestionId,
+                                SubmissionAnswerDto::getAnswerText
+                        ));
+
+        // 2️⃣ Fetch quiz from quiz-service
+        QuizAssessmentResponseDto quiz =
+                retrofitService.getQuizAssessment(
+                        submission.getCourseId(),
+                        submission.getModuleId(),
+                        (int) submission.getTargetId()
+                );
+
+        List<SubmissionQuizQuestionViewDto> merged =
+                quiz.getQuestions().stream()
+                        .map(q -> new SubmissionQuizQuestionViewDto(
+                                q.getQuestionId(),
+                                q.getText(),
+                                q.getOptions(),
+                                studentAnswerMap.get(q.getQuestionId()),
+                                q.getCorrectAnswer(),
+                                q.getMarks()
+                        ))
+                        .toList();
+
+        return new SubmissionViewDto(
+                submission.getSubmissionId(),
+                submission.getStudentAdmissionId(),
+                submission.getTargetId(),
+                quiz.getTitle(),
+                merged
+        );
+    }
+    private List<SubmissionAnswerDto> parseSubmissionAnswers(String json) {
+        try {
+            return objectMapper.readValue(
+                    json,
+                    new TypeReference<List<SubmissionAnswerDto>>() {}
+            );
+        } catch (Exception e) {
+            throw new RuntimeException("Invalid submission JSON", e);
+        }
+    }
+
+
+
+
+
+
+    @Transactional
+    public SubmissionViewDto getGradedAssessmentByStudent(Long submissionId) {
+
+        Submission submission = submissionRepository
+                .findByIdAndSubmissionStatus(submissionId, SubmissionStatus.GRADED)
+                .orElseThrow(() -> new RuntimeException("Submission not found"));
+
+        List<SubmissionAnswerDtos> studentAnswers = parseSubmissionAnswer(submission.getSubmissionText());
+        Map<String, String> studentAnswerMap = studentAnswers.stream()
+                .collect(Collectors.toMap(
+                        SubmissionAnswerDtos::getQuestionKey,
+                        SubmissionAnswerDtos::getAnswerText
+                ));
+
+        AssessmentResponse assessment = switch (submission.getSubmissionType()) {
+            case QUIZ -> retrofitService.getQuizAssessment(
+                    submission.getCourseId(),
+                    submission.getModuleId(),
+                    (int) submission.getTargetId()
+            );
+            case CAT -> retrofitService.getCatAssessment(
+                    submission.getCourseId(),
+                    (int) submission.getTargetId()
+            );
+            default ->
+                    throw new IllegalStateException("Unsupported submission type: " + submission.getSubmissionType());
+        };
+
+        SubmissionGradeDto submissionGradeDto =
+                retrofitService.getSubmissionGradesBySubmissionId(submission.getId());
+
+        Map<String, QuestionGradeDto> gradeMap = submissionGradeDto.getQuestionGrades().stream()
+                .collect(Collectors.toMap(QuestionGradeDto::getQuestionId, g -> g));
+
+        Map<String, Integer> keyToQuestionIdMap;
+        try {
+            keyToQuestionIdMap = objectMapper.readValue(
+                    submission.getQuestionKeyMapJson(),
+                    new TypeReference<Map<String, Integer>>() {}
+            );
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Failed to parse questionKeyMapJson", e);
+        }
+
+        Map<Integer, String> questionIdToKeyMap = keyToQuestionIdMap.entrySet().stream()
+                .collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));
+
+        List<SubmissionQuizQuestionViewDto> merged = assessment.getQuestions().stream()
+                .map(q -> {
+                    String qKey = questionIdToKeyMap.getOrDefault(q.getQuestionId(), null);
+                    QuestionGradeDto grade = qKey != null ? gradeMap.get(qKey) : null;
+
+                    return new SubmissionQuizQuestionViewDto(
+                            q.getQuestionId(),
+                            q.getText(),
+                            q.getOptions(),
+                            qKey != null ? studentAnswerMap.getOrDefault(qKey, "") : "",
+                            q.getCorrectAnswer(),
+                            grade != null ? grade.getAwardedPoints() : 0,
+                            grade != null ? grade.getMaxPoints() : q.getMarks(),
+                            grade != null ? grade.getFeedback() : ""
+                    );
+                })
+                .toList();
+
+        double totalAwardedPoints = merged.stream()
+                .mapToDouble(SubmissionQuizQuestionViewDto::getAwardedMarks)
+                .sum();
+
+        double totalMaxPoints = merged.stream()
+                .mapToDouble(SubmissionQuizQuestionViewDto::getMaxMarks)
+                .sum();
+
+        SubmissionViewDto viewDto = new SubmissionViewDto(
+                submission.getId(),
+                submission.getStudentAdmissionId(),
+                submission.getTargetId(),
+                assessment.getTitle(),
+                totalAwardedPoints,
+                totalMaxPoints,
+                merged
+        );
+
+        return viewDto;
+    }
+
+    private List<SubmissionAnswerDtos> parseSubmissionAnswer(String json) {
+        try {
+            return objectMapper.readValue(
+                    json,
+                    new TypeReference<List<SubmissionAnswerDtos>>() {
+                    }
+            );
+        } catch (Exception e) {
+            throw new RuntimeException("Invalid submission JSON", e);
+        }
+    }
+}
+
