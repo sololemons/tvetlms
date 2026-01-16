@@ -171,7 +171,7 @@ public class GradingQuizSubmissionsService {
             List<SubmissionAnswerDto> submissionAnswers,
             List<QuestionDto> quizQuestions
     ) {
-        Map<Long, QuestionDto> questionMap = quizQuestions.stream()
+        Map<Integer, QuestionDto> questionMap = quizQuestions.stream()
                 .collect(Collectors.toMap(QuestionDto::getQuestionId, q -> q));
 
         Map<String, String> aiAnswers = new LinkedHashMap<>();
@@ -192,7 +192,7 @@ public class GradingQuizSubmissionsService {
             }
 
             aiAnswers.put(key, ans.getAnswerText());
-            questionKeyMap.put(key, question.getQuestionId());
+            questionKeyMap.put(key, Long.valueOf(question.getQuestionId()));
         }
 
         return new AiAnswerMapping(aiAnswers, questionKeyMap);

@@ -10,7 +10,7 @@ import java.util.Set;
 @AllArgsConstructor
 @NoArgsConstructor
 public class CatQuestionDto {
-    private Long questionId;
+    private int questionId;
     private String text;
     private int marks;
     private Set<String> options;

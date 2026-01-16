@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.shared.dtos.*;
 import com.staffservice.security.configuration.AiGradingClient;
+import com.staffservice.staffservice.dtos.AiAnswerMapping;
 import com.staffservice.staffservice.dtos.SubmissionAnswerDto;
 import com.staffservice.staffservice.entities.Submission;
 import com.staffservice.staffservice.entities.SubmissionStatus;
@@ -58,8 +59,18 @@ public class GradingCatSubmissionsService {
 
                 AiCatGradeRequest.CatData catData = mapToCatData(catAssessment);
 
-                Map<String, String> studentAnswers =
-                        mapSubmissionToAiFormat(answers, catAssessment.getQuestions());
+                AiAnswerMapping mapping = mapCatSubmissionToAiFormat(
+                        answers,
+                        catAssessment.getQuestions()
+                );
+
+                Map<String, String> studentAnswers = mapping.getStudentAnswers();
+
+                submission.setQuestionKeyMapJson(
+                        objectMapper.writeValueAsString(mapping.getQuestionKeyMap())
+                );
+                submissionRepository.save(submission);
+
 
                 AiCatGradeRequest request = new AiCatGradeRequest();
                 request.setSubmissionId(String.valueOf(submission.getId()));
@@ -141,25 +152,35 @@ public class GradingCatSubmissionsService {
 
         return catData;
     }
-    private Map<String, String> mapSubmissionToAiFormat(List<SubmissionAnswerDto> submissionAnswers, List<QuestionDto> quizQuestions) {
-        Map<Long, QuestionDto> questionMap = quizQuestions.stream()
+    private AiAnswerMapping mapCatSubmissionToAiFormat(
+            List<SubmissionAnswerDto> submissionAnswers,
+            List<QuestionDto> catQuestions
+    ) {
+        Map<Integer, QuestionDto> questionMap = catQuestions.stream()
                 .collect(Collectors.toMap(QuestionDto::getQuestionId, q -> q));
 
-        Map<String, String> aiAnswers = new HashMap<>();
+        Map<String, String> aiAnswers = new LinkedHashMap<>();
+        Map<String, Long> questionKeyMap = new LinkedHashMap<>();
+
         int mcqCounter = 0, tfCounter = 0, saCounter = 0;
 
         for (SubmissionAnswerDto ans : submissionAnswers) {
             QuestionDto question = questionMap.get(ans.getQuestionId());
             if (question == null) continue;
 
+            String key;
+
             switch (gradingQuizSubmissionsService.detectQuestionType(question)) {
-                case "MCQ" -> aiAnswers.put("mcq_" + mcqCounter++, ans.getAnswerText());
-                case "TRUE_FALSE" -> aiAnswers.put("tf_" + tfCounter++, ans.getAnswerText());
-                case "SHORT_ANSWER" -> aiAnswers.put("sa_" + saCounter++, ans.getAnswerText());
+                case "MCQ" -> key = "mcq_" + mcqCounter++;
+                case "TRUE_FALSE" -> key = "tf_" + tfCounter++;
+                default -> key = "sa_" + saCounter++;
             }
+
+            aiAnswers.put(key, ans.getAnswerText());
+            questionKeyMap.put(key, Long.valueOf(question.getQuestionId()));
         }
 
-        return aiAnswers;
+        return new AiAnswerMapping(aiAnswers, questionKeyMap);
     }
 
 }

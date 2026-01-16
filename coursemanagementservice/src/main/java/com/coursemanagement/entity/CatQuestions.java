@@ -19,7 +19,7 @@ public class CatQuestions {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "question_id")
-    private Long questionId;
+    private int questionId;
     @Column(name = "question_text")
     private String questionText;
 
