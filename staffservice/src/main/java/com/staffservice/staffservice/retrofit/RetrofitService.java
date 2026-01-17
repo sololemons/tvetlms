@@ -1,5 +1,6 @@
 package com.staffservice.staffservice.retrofit;
 
+import com.shared.dtos.AssignmentDto;
 import com.shared.dtos.CatAssessmentResponseDto;
 import com.shared.dtos.QuizAssessmentResponseDto;
 import com.shared.dtos.SubmissionGradeDto;
@@ -107,6 +108,31 @@ public class RetrofitService {
                 logger.error("Failed to fetch submission grades. Response code={}, Error={}",
                         response.code(), response.errorBody());
                 throw new UserNotFoundException("Failed to fetch submission grades. Response code=" + response.code());
+            }
+
+        } catch (IOException e) {
+            logger.error("API call failed due to network error: {}", e.getMessage());
+            throw new RuntimeException("API call failed due to network error",e);
+        }
+    }
+    public AssignmentDto getAssignments(Long assignmentId, Integer courseId)
+    {
+        logger.info("Fetching assignments for assignmentId={} for course {}",
+                assignmentId, courseId);
+
+        Call<AssignmentDto>call = apiClient.getAssignments(assignmentId, courseId);
+
+
+        try {
+            Response<AssignmentDto> response = call.execute();
+
+            if (response.isSuccessful() && response.body() != null) {
+                logger.info("Successfully fetched assignments. Response code={}", response.code());
+                return response.body();
+            } else {
+                logger.error("Failed to fetch assignments. Response code={}, Error={}",
+                        response.code(), response.errorBody());
+                throw new UserNotFoundException("Failed to fetch assignments. Response code=" + response.code());
             }
 
         } catch (IOException e) {

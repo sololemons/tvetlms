@@ -159,13 +159,7 @@ public class StaffService {
                 .collect(Collectors.toList());
     }
 
-    @Transactional(readOnly = true)
-    public List<AssignmentDto> getAllAssignments(String className) {
-        List<Assignments> assignments = assignmentRepository.findByClasses_ClassName(className);
-        return assignments.stream()
-                .map(AssignmentMapper::toDto)
-                .toList();
-    }
+
    /*
     @RabbitListener(queues = RabbitMQConfiguration.ADD_ASSIGNMENT_QUEUE)
     public void addSubmission(SubmissionRequestDto submissionRequestDto) {
@@ -208,15 +202,7 @@ public class StaffService {
 
     }
 
-    @Transactional(readOnly = true)
-    public List<AssignmentDto> getAssignmentsByStaffId(Long staffId) {
 
-        List<Assignments> assignments = assignmentRepository.findByStaffId(staffId);
-        return assignments.stream()
-                .map(AssignmentMapper::toDto)
-                .toList();
-
-    }
 
     public StaffDto getActiveStaff(Principal principal) {
         String email = principal.getName();
@@ -498,7 +484,6 @@ public class StaffService {
 
 
 
-        // 2️⃣ Parse questionKeyMapJson
         Map<String, Integer> keyToQuestionIdMap;
         try {
             keyToQuestionIdMap = objectMapper.readValue(
@@ -536,7 +521,6 @@ public class StaffService {
 
         log.info("studentAnswerMap {}",studentAnswerMap);
 
-        // 5️⃣ Fetch assessment
         AssessmentResponse assessment = switch (submission.getSubmissionType()) {
             case QUIZ -> retrofitService.getQuizAssessment(
                     submission.getCourseId(),
@@ -552,7 +536,6 @@ public class StaffService {
             );
         };
 
-        // 6️⃣ Fetch grades
         SubmissionGradeDto submissionGradeDto =
                 retrofitService.getSubmissionGradesBySubmissionId(submission.getId());
 
@@ -563,7 +546,6 @@ public class StaffService {
                                 g -> g
                         ));
 
-        // 7️⃣ Merge everything
         List<SubmissionQuizQuestionViewDto> merged =
                 assessment.getQuestions().stream()
                         .map(q -> {
@@ -583,7 +565,6 @@ public class StaffService {
                         })
                         .toList();
 
-        // 8️⃣ Totals
         double totalAwardedPoints = merged.stream()
                 .mapToDouble(SubmissionQuizQuestionViewDto::getAwardedMarks)
                 .sum();

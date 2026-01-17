@@ -17,12 +17,16 @@ public class RabbitMQConfiguration {
     public static final String GENERATE_CERTIFICATE_QUEUE = "generate_certificate_queue";
     public static final String GRADE_SUBMISSION_QUEUE ="grade_submission_queue";
     public static final String MARK_SUBMISSION_GRADED_QUEUE ="mark_submission_graded_queue";
+    public static final String ASSIGNMENT_GRADING_QUEUE ="assignment_grading_queue";
 
 
     @Bean
     public Queue gradingRequestQueue() {
         return new Queue(GRADING_REQUEST_QUEUE);
     }
+
+    @Bean
+    public Queue assignmentGrading(){ return new Queue(ASSIGNMENT_GRADING_QUEUE);}
 
     @Bean
     public Queue generateCertificateQueue() {

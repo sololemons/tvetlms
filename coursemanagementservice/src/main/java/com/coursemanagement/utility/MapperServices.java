@@ -4,6 +4,7 @@ import com.coursemanagement.dtos.*;
 import com.coursemanagement.entity.*;
 import com.coursemanagement.repository.CourseModuleRepository;
 import com.coursemanagement.repository.CourseRepository;
+import com.shared.dtos.AssignmentDto;
 import com.shared.dtos.ModuleDto;
 import com.shared.dtos.QuestionDto;
 import com.shared.dtos.QuizAssessmentDto;
@@ -224,6 +225,15 @@ public class MapperServices {
         courseRepository.save(course);
 
         log.info("Cat mapped and saved successfully. Questions count: {}", catAssessment.getCatQuestions().size());
+    }
+    public AssignmentDto mapAssignmentToDto (Assignments assignments){
+        AssignmentDto assignmentDto = new AssignmentDto();
+        assignmentDto.setAssignmentId(assignments.getAssignmentId());
+        assignmentDto.setAssignmentName(assignments.getTitle());
+        assignmentDto.setAssignmentDescription(assignments.getDescription());
+        assignmentDto.setDueDate(String.valueOf(assignments.getDueDate()));
+        assignmentDto.setTotalMarks((long) assignments.getTotalMarks());
+        return assignmentDto;
     }
 }
 

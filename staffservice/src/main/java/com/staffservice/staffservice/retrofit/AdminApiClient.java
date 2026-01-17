@@ -31,7 +31,11 @@ public interface AdminApiClient {
     @GET("/grade/get/grades/submissionid")
     Call<SubmissionGradeDto> getSubmissionGradesBySubmissionId(
             @Query("submissionId") Long submissionId
-
+    );
+    @GET("/course/get/assignments")
+    Call<AssignmentDto> getAssignments(
+            @Query("assignmentId") Long assignmentId,
+            @Query("courseId") Integer courseId
     );
 
 }

@@ -24,6 +24,7 @@ public class RabbitMQConfiguration {
     public static final String GET_NOTIFICATIONS = "get_notifications";
     public static final String GRADE_SUBMISSION_QUEUE = "grade_submission_queue";
     public static final String MARK_SUBMISSION_GRADED_QUEUE ="mark_submission_graded_queue";
+    public static final String ASSIGNMENT_GRADING_QUEUE = "assignment_grading_queue";
 
 
 
@@ -79,6 +80,11 @@ public class RabbitMQConfiguration {
 
     @Bean
     public Queue markSubmissionGraded(){ return new Queue(MARK_SUBMISSION_GRADED_QUEUE);}
+
+    @Bean
+    public Queue assignmentGradingQueue() {
+        return new Queue(ASSIGNMENT_GRADING_QUEUE);
+    }
 
 
     @Bean

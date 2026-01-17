@@ -1,5 +1,6 @@
 package com.staffservice.staffservice.retrofit;
 
+import com.shared.dtos.AssignmentDto;
 import com.shared.dtos.CatAssessmentResponseDto;
 import com.shared.dtos.QuizAssessmentResponseDto;
 import com.shared.dtos.SubmissionGradeDto;
@@ -42,6 +43,10 @@ public class RetrofitController {
     @GetMapping("/grades/submissionid")
     public ResponseEntity<SubmissionGradeDto> getSubmissionGrades(@RequestParam Long submissionId) {
      return ResponseEntity.ok(retrofitService.getSubmissionGradesBySubmissionId(submissionId));
+    }
+    @GetMapping("/get/assignments")
+    public ResponseEntity<AssignmentDto> getAssignments(@RequestParam Long assignmentId , @RequestParam Integer courseId) {
+        return ResponseEntity.ok(retrofitService.getAssignments(assignmentId,courseId));
     }
 
 

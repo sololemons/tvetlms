@@ -417,4 +417,10 @@ public class CourseService {
                         .toList()
         );
     }
+
+    public AssignmentDto getAssignment(Long assignmentId, Integer courseId) {
+        Assignments assignments = assignmentRepository.findByAssignmentIdAndCourse_CourseId(assignmentId,courseId)
+                .orElseThrow(() -> new RuntimeException("Assignment not found"));
+        return mapperServices.mapAssignmentToDto(assignments);
+    }
 }

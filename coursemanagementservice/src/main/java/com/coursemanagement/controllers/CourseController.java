@@ -1,11 +1,8 @@
 package com.coursemanagement.controllers;
 
 import com.coursemanagement.dtos.*;
-import com.shared.dtos.CatAssessmentResponseDto;
-import com.shared.dtos.ModuleDto;
+import com.shared.dtos.*;
 import com.coursemanagement.services.CourseService;
-import com.shared.dtos.QuizAssessmentDto;
-import com.shared.dtos.QuizAssessmentResponseDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
@@ -98,6 +95,11 @@ public class CourseController {
     public ResponseEntity<CatAssessmentResponseDto> getCatAssessment
             (@RequestParam Integer courseId, @RequestParam Integer catId){
         return ResponseEntity.ok(courseService.getCatAssessment(courseId,catId));
+    }
+    @GetMapping("/get/assignments")
+    public ResponseEntity<AssignmentDto>getAssignment(@RequestParam Long assignmentId , @RequestParam Integer courseId){
+        return ResponseEntity.ok(courseService.getAssignment(assignmentId,courseId));
+
     }
 
 }

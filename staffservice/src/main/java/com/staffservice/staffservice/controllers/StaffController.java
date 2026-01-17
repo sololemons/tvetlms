@@ -65,20 +65,20 @@ public class StaffController {
         return ResponseEntity.ok(staffServices.getAllClasses());
     }
 
-    @GetMapping("/view/assignments")
-    public ResponseEntity<List<AssignmentDto>> getAssignments(@RequestParam String className) {
-        return ResponseEntity.ok(staffServices.getAllAssignments(className));
-    }
+  //  @GetMapping("/view/assignments")
+  //  public ResponseEntity<List<AssignmentDto>> getAssignments(@RequestParam String className) {
+  //      return ResponseEntity.ok(staffServices.getAllAssignments(className));
+  //  }
 
     @GetMapping("/view/submissions")
     public ResponseEntity<List<SubmissionDto>> getSubmissions(@RequestParam String studentAdmissionId) {
         return ResponseEntity.ok(staffServices.getSubmissions(studentAdmissionId));
     }
 
-    @GetMapping("/get/assignments/staffId")
-    public ResponseEntity<List<AssignmentDto>> getSubmissionsByStaffId(@RequestParam Long staffId) {
-        return ResponseEntity.ok(staffServices.getAssignmentsByStaffId(staffId));
-    }
+    //@GetMapping("/get/assignments/staffId")
+  //  public ResponseEntity<List<AssignmentDto>> getSubmissionsByStaffId(@RequestParam Long staffId) {
+    //    return ResponseEntity.ok(staffServices.getAssignmentsByStaffId(staffId));
+  //  }
 
     @GetMapping("/get/profile")
     public ResponseEntity<StaffDto> getStaff(Principal principal) {
